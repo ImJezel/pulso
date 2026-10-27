@@ -1,0 +1,79 @@
+/* ============================================================================
+   Pulso — Tokens de diseño
+   ----------------------------------------------------------------------------
+   Un solo lugar define color, tipografía, espacio y radio. Los modos de
+   accesibilidad (alto contraste, tamaño de texto) se implementan cambiando
+   el VALOR de estas variables, nunca reescribiendo estilos de componentes.
+   ========================================================================== */
+
+:root {
+  /* --- Paleta base ------------------------------------------------------ */
+  --pulso-tinta: #14312b; /* Verde muy oscuro. Texto principal, barra superior */
+  --pulso-salvia: #4e8c7a; /* Verde medio. Marca, relleno, "en rango"          */
+  --pulso-lino: #f6f3ec; /* Fondo de aplicación. Cálido, sin brillo          */
+  --pulso-papel: #ffffff; /* Superficie de tarjetas                           */
+  --pulso-ambar: #c87a2c; /* Atención                                         */
+  --pulso-ladrillo: #a33b2a; /* Alerta seria. Uso escaso                      */
+  --pulso-bruma: #8a9a94; /* Bordes, decoración, deshabilitado                */
+
+  /* --- Derivados por accesibilidad -------------------------------------
+     #4E8C7A sobre blanco da 3.9:1 y #C87A2C da 3.4:1: sirven para rellenos
+     y gráficos, NO para texto (WCAG AA pide 4.5:1). Estos derivados son la
+     versión legible de cada color. Se documenta en docs/02 (hallazgo H-04). */
+  --pulso-salvia-fuerte: #3a6b5c; /* 6.1:1 sobre blanco — botón primario, texto */
+  --pulso-ambar-texto: #8a5316; /* 6.3:1 — texto de "atención"                */
+  --pulso-bruma-texto: #5c6b66; /* 5.6:1 — texto secundario                   */
+
+  /* --- Fondos de estado (tintes muy claros) ---------------------------- */
+  --pulso-salvia-suave: #e4efea;
+  --pulso-ambar-suave: #fbf0e2;
+  --pulso-ladrillo-suave: #f8e7e3;
+  --pulso-borde: #ddd7ca;
+  --pulso-borde-fuerte: #b9b1a0;
+
+  /* --- Tipografía ------------------------------------------------ */
+  --fuente-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --fuente-cuerpo: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fuente-datos: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', 'Courier New', monospace;
+
+  /* Escala base 17px, no 16. El usuario la multiplica desde Ajustes. */
+  --escala-texto: 1;
+
+  /* --- Layout ---------------------------------------------------- */
+  --ancho-contenido: 40rem; /* ~640px a escala 1 */
+  --radio-tarjeta: 12px;
+  --area-tactil: 3rem; /* 48px+ a escala 1 */
+  --sombra-tarjeta: 0 1px 2px rgba(20, 49, 43, 0.06), 0 4px 12px rgba(20, 49, 43, 0.05);
+  --duracion-micro: 200ms;
+}
+
+/* ---------------------------------------------------------------------------
+   Modo alto contraste. Solo cambia valores; ningún componente sabe que existe.
+   Objetivo: superar 7:1 (AAA) en texto y 4.5:1 en bordes y componentes.
+   ------------------------------------------------------------------------- */
+:root[data-contraste='alto'] {
+  --pulso-tinta: #000000;
+  --pulso-lino: #ffffff;
+  --pulso-papel: #ffffff;
+  --pulso-salvia: #14493b;
+  --pulso-salvia-fuerte: #0f3b30;
+  --pulso-ambar: #7a4610;
+  --pulso-ambar-texto: #5e360b;
+  --pulso-ladrillo: #7a2418;
+  --pulso-bruma: #3d4744;
+  --pulso-bruma-texto: #1f2a26;
+  --pulso-salvia-suave: #ffffff;
+  --pulso-ambar-suave: #ffffff;
+  --pulso-ladrillo-suave: #ffffff;
+  --pulso-borde: #000000;
+  --pulso-borde-fuerte: #000000;
+  --sombra-tarjeta: none;
+}
+
+/* Escalas de texto de Preferencias.escalaTexto */
+:root[data-texto='grande'] {
+  --escala-texto: 1.15;
+}
+:root[data-texto='muy-grande'] {
+  --escala-texto: 1.35;
+}

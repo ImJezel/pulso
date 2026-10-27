@@ -1,0 +1,251 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+/* Los tokens se exponen a Tailwind con `inline` para que la utilidad emita
+   var(--pulso-*) y el modo alto contraste funcione por cascada, sin recompilar. */
+@theme inline {
+  --color-tinta: var(--pulso-tinta);
+  --color-salvia: var(--pulso-salvia);
+  --color-salvia-fuerte: var(--pulso-salvia-fuerte);
+  --color-salvia-suave: var(--pulso-salvia-suave);
+  --color-lino: var(--pulso-lino);
+  --color-papel: var(--pulso-papel);
+  --color-ambar: var(--pulso-ambar);
+  --color-ambar-texto: var(--pulso-ambar-texto);
+  --color-ambar-suave: var(--pulso-ambar-suave);
+  --color-ladrillo: var(--pulso-ladrillo);
+  --color-ladrillo-suave: var(--pulso-ladrillo-suave);
+  --color-bruma: var(--pulso-bruma);
+  --color-bruma-texto: var(--pulso-bruma-texto);
+  --color-borde: var(--pulso-borde);
+  --color-borde-fuerte: var(--pulso-borde-fuerte);
+
+  --font-display: var(--fuente-display);
+  --font-cuerpo: var(--fuente-cuerpo);
+  --font-datos: var(--fuente-datos);
+
+  --radius-tarjeta: var(--radio-tarjeta);
+  --shadow-tarjeta: var(--sombra-tarjeta);
+  --spacing-tactil: var(--area-tactil);
+  --container-contenido: var(--ancho-contenido);
+}
+
+@layer base {
+  html {
+    /* Escala base 17px multiplicada por la preferencia del usuario. */
+    font-size: calc(17px * var(--escala-texto));
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--pulso-lino);
+    color: var(--pulso-tinta);
+    font-family: var(--fuente-cuerpo);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-wrap: break-word;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--fuente-display);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  /* Foco visible de 2px en TODO lo interactivo. */
+  :focus-visible {
+    outline: 3px solid var(--pulso-tinta);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button {
+    cursor: pointer;
+    font: inherit;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Corrección H-06: las flechitas del <input type="number"> se montaban
+     encima de la cifra de 32px del formulario de registro. Además son un
+     objetivo táctil de 12px, imposible de acertar con el dedo. Fuera: ya hay
+     teclado numérico por inputMode y el campo es grande. */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  /* Los números clínicos siempre en la fuente de datos, tabulares. */
+  .cifra {
+    font-family: var(--fuente-datos);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  /* Solo para lectores de pantalla. */
+  .solo-lectores {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Enlace de salto: aparece al tabular. */
+  .saltar-al-contenido {
+    position: absolute;
+    left: 0.5rem;
+    top: -10rem;
+    z-index: 60;
+    background: var(--pulso-tinta);
+    color: var(--pulso-papel);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: top 150ms ease;
+  }
+  .saltar-al-contenido:focus {
+    top: 0.5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Animación de confirmación al marcar una dosis (200 ms). */
+  @keyframes pulso-confirmar {
+    0% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .animar-confirmar {
+    animation: pulso-confirmar var(--duracion-micro) ease-out;
+  }
+
+  @keyframes pulso-entrar {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animar-entrar {
+    animation: pulso-entrar var(--duracion-micro) ease-out;
+  }
+}
+
+/* ============================================================================
+   Impresión — el informe médico en A4 limpio
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 14mm 16mm 14mm;
+  }
+
+  :root {
+    --escala-texto: 1;
+  }
+
+  html {
+    font-size: 10.5pt;
+    background: #fff;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Fuera navegación, botones y todo lo que no sea el documento. */
+  .no-imprimir,
+  nav,
+  header.app-encabezado,
+  button {
+    display: none !important;
+  }
+
+  .solo-impresion {
+    display: block !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  .hoja-informe {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    max-width: none !important;
+  }
+
+  .hoja-informe table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+
+  .hoja-informe th,
+  .hoja-informe td {
+    border: 1px solid #999;
+    padding: 3pt 5pt;
+    text-align: left;
+  }
+
+  .hoja-informe thead {
+    display: table-header-group;
+  }
+
+  .hoja-informe tr,
+  .evitar-corte {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
