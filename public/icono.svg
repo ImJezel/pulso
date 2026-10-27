@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pulso">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#14312B" />
+      <stop offset="100%" stop-color="#2A5348" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="113" fill="url(#fondo)" />
+  <polyline
+    points="72,282 164,282 205,154 256,379 307,230 348,282 440,282"
+    fill="none"
+    stroke="#F6F3EC"
+    stroke-width="38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

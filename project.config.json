@@ -1,0 +1,22 @@
+{
+  "institucion": "Instituto Tecnológico de Las Américas (ITLA)",
+  "asignatura": "Interacción Humano-Computadora",
+  "seccion": "2026-C-2",
+  "facilitador": "Eduandy Isabel Cruz Abreu",
+  "proyecto": "Pulso",
+  "renglon": "Salud",
+  "eslogan": "Tu libreta de salud, siempre contigo.",
+  "integrantes": [
+    {
+      "nombre": "Jezel Pujols",
+      "matricula": "2025-2067"
+    },
+    {
+      "nombre": "Rebeca Mary Astacio Bryan",
+      "matricula": "2025-2264"
+    }
+  ],
+  "fechaEntrega": "2026-10-26",
+  "version": "1.0.0",
+  "notaMetadatos": "Los datos institucionales viven solo aquí."
+}
