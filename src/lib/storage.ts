@@ -1,20 +1,29 @@
 /* ============================================================================
-   Pulso — Capa de persistencia
+   Pulso — Capa de persistencia local
    ----------------------------------------------------------------------------
    Nadie más en la aplicación toca localStorage. Toda lectura y escritura pasa
    por aquí, por tres razones que se pueden defender en la presentación:
 
-     1. Migrar a IndexedDB o a una API sería cambiar SOLO este archivo.
+     1. Cambiar de almacenamiento es cambiar SOLO esta capa (y así fue: la
+        base de datos de Supabase se añadió en lib/remoto.ts sin tocar
+        ninguna pantalla).
      2. Un JSON corrupto o un almacenamiento lleno no puede tumbar la app:
         se atrapa el error y se devuelve un estado válido.
-     3. Es la única puerta por donde salen los datos de salud del usuario, y
-        esa puerta da al propio dispositivo. A ningún servidor.
+     3. Con cuenta, esta copia local es la que permite abrir la app sin
+        internet. Cada usuario tiene su propia clave, así que dos personas
+        que comparten un teléfono nunca ven los datos de la otra.
    ========================================================================== */
 
 import type { EstadoPulso, Preferencias } from '../types'
 
+/** Modo local (sin Supabase configurado): una sola clave, como siempre. */
 export const CLAVE = 'pulso.datos.v1'
 export const VERSION_ESQUEMA = 1
+
+/** Copia local del estado de un usuario con cuenta. */
+export const claveUsuario = (uid: string) => `${CLAVE}.${uid}`
+/** Lo último que el servidor confirmó para ese usuario: la base de la sincronización. */
+export const claveConfirmado = (uid: string) => `pulso.confirmado.v1.${uid}`
 
 export const PREFERENCIAS_POR_DEFECTO: Preferencias = {
   escalaTexto: 'normal',
@@ -59,11 +68,11 @@ export function normalizar(bruto: unknown): EstadoPulso {
   }
 }
 
-export function cargar(): EstadoPulso {
+export function cargar(clave: string = CLAVE): EstadoPulso {
   const a = almacen()
   if (!a) return { ...ESTADO_INICIAL }
   try {
-    const crudo = a.getItem(CLAVE)
+    const crudo = a.getItem(clave)
     if (!crudo) return { ...ESTADO_INICIAL }
     return normalizar(JSON.parse(crudo))
   } catch (e) {
@@ -71,7 +80,7 @@ export function cargar(): EstadoPulso {
     // y se arranca limpio, en vez de dejar la app inservible.
     console.warn('Pulso: no se pudo leer el almacenamiento, se empieza limpio.', e)
     try {
-      a.setItem(`${CLAVE}.corrupto.${Date.now()}`, a.getItem(CLAVE) ?? '')
+      a.setItem(`${clave}.corrupto.${Date.now()}`, a.getItem(clave) ?? '')
     } catch {
       /* si tampoco se puede guardar la copia, seguimos igual */
     }
@@ -81,11 +90,11 @@ export function cargar(): EstadoPulso {
 
 export type ResultadoGuardar = { ok: true } | { ok: false; motivo: string }
 
-export function guardar(estado: EstadoPulso): ResultadoGuardar {
+export function guardar(estado: EstadoPulso, clave: string = CLAVE): ResultadoGuardar {
   const a = almacen()
   if (!a) return { ok: false, motivo: 'Este navegador no permite guardar datos localmente.' }
   try {
-    a.setItem(CLAVE, JSON.stringify(estado))
+    a.setItem(clave, JSON.stringify(estado))
     return { ok: true }
   } catch (e) {
     const lleno = e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)
@@ -98,14 +107,39 @@ export function guardar(estado: EstadoPulso): ResultadoGuardar {
   }
 }
 
-export function borrarTodo(): void {
+export function borrarTodo(clave: string = CLAVE): void {
   const a = almacen()
   if (!a) return
   try {
-    a.removeItem(CLAVE)
+    a.removeItem(clave)
   } catch {
     /* nada que hacer */
   }
+}
+
+/** La base de la sincronización. null = este dispositivo nunca ha sincronizado. */
+export function cargarConfirmado(uid: string): EstadoPulso | null {
+  try {
+    const crudo = almacen()?.getItem(claveConfirmado(uid))
+    return crudo ? normalizar(JSON.parse(crudo)) : null
+  } catch {
+    // Sin base fiable: se sube todo lo local y se vuelve a pedir lo del servidor.
+    return null
+  }
+}
+
+export function guardarConfirmado(uid: string, estado: EstadoPulso): void {
+  try {
+    almacen()?.setItem(claveConfirmado(uid), JSON.stringify(estado))
+  } catch {
+    /* si no cabe, la próxima vez se sube todo de nuevo: más lento, no incorrecto */
+  }
+}
+
+/** Al cerrar sesión o eliminar la cuenta: no se deja copia en el dispositivo. */
+export function olvidarUsuario(uid: string): void {
+  borrarTodo(claveUsuario(uid))
+  borrarTodo(claveConfirmado(uid))
 }
 
 /** Copia de seguridad manual, por si el usuario cambia de teléfono. */

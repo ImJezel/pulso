@@ -14,9 +14,13 @@
     "axe": "node scripts/axe.mjs",
     "recorrido": "node scripts/recorrido.mjs",
     "verificar": "npm test && npm run build && npm run axe && npm run recorrido",
-    "build:unico": "tsc -b && vite build --mode unico"
+    "build:unico": "tsc -b && vite build --mode unico",
+    "test:integracion": "vitest run tests/integracion --mode integracion",
+    "db:push": "supabase db push",
+    "db:tipos": "supabase gen types typescript --linked > src/types/supabase.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.33.0",
     "react": "^19.2.8",
@@ -36,6 +40,7 @@
     "jsdom": "^30.0.1",
     "oxlint": "^1.75.0",
     "puppeteer-core": "^25.8.0",
+    "supabase": "^2.115.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
