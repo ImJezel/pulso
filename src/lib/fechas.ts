@@ -97,7 +97,8 @@ export function relativo(d: Date | string): string {
 
 export function edad(fechaNacimiento: string): number | null {
   if (!fechaNacimiento) return null
-  const d = new Date(`${fechaNacimiento}T12:00:00`)
+  // Medianoche local: a las 00:01 del cumpleaños los años ya están cumplidos.
+  const d = new Date(`${fechaNacimiento}T00:00:00`)
   if (Number.isNaN(d.getTime())) return null
   const anios = differenceInYears(new Date(), d)
   return anios >= 0 && anios < 130 ? anios : null
