@@ -31,7 +31,17 @@ import type {
   Perfil,
   Preferencias,
 } from '../types'
-import { cargar, guardar, borrarTodo, ESTADO_INICIAL, nuevoId } from '../lib/storage'
+import {
+  cargar,
+  guardar,
+  borrarTodo,
+  claveUsuario,
+  CLAVE,
+  ESTADO_INICIAL,
+  nuevoId,
+} from '../lib/storage'
+import { useSincronizacion } from './useSincronizacion'
+import type { Sincronizacion } from './useSincronizacion'
 import { sincronizarDosis } from '../lib/adherencia'
 import { generarDatosDemo } from '../lib/demo'
 import { isoLocal } from '../lib/fechas'
@@ -171,20 +181,43 @@ interface ValorContexto {
   anunciar: (mensaje: string) => void
   errorAlmacenamiento: string | null
   nuevoId: typeof nuevoId
+  /** Usuario de Supabase dueño de estos datos; null en modo local. */
+  usuarioId: string | null
+  /** Estado de la conexión con la base de datos y acciones para forzarla. */
+  sync: Sincronizacion
 }
 
 const Contexto = createContext<ValorContexto | null>(null)
 
 const SEGUNDOS_DESHACER = 8
 
-export function AppProvider({ children }: { children: ReactNode }) {
+/**
+ * `usuarioId` llega desde la sesión. App.tsx monta un proveedor nuevo (key)
+ * por cada usuario: al cambiar de cuenta no queda nada del anterior en memoria.
+ */
+export function AppProvider({
+  children,
+  usuarioId = null,
+}: {
+  children: ReactNode
+  usuarioId?: string | null
+}) {
+  const clave = usuarioId ? claveUsuario(usuarioId) : CLAVE
   const [estado, despachar] = useReducer(reducer, undefined, () =>
-    sincronizar(cargar()),
+    sincronizar(cargar(clave)),
   )
   const [deshacer, setDeshacer] = useState<Deshacer | null>(null)
   const [anuncio, setAnuncio] = useState('')
   const [errorAlmacenamiento, setErrorAlmacenamiento] = useState<string | null>(null)
   const temporizador = useRef<number | undefined>(undefined)
+
+  /* Lo que llega del servidor reemplaza la copia local, y se completan las
+     dosis de hoy (las que aún no existen se crean como pendientes). */
+  const reemplazar = useCallback(
+    (remoto: EstadoPulso) => despachar({ tipo: 'REEMPLAZAR', estado: sincronizar(remoto) }),
+    [],
+  )
+  const sync = useSincronizacion(usuarioId, estado, reemplazar)
 
   /* Persistir en cada cambio. Es un objeto pequeño; no hace falta debounce.
      oxlint avisa aquí de "set-state-in-effect", y es el caso que el propio
@@ -192,9 +225,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
      solo se conoce después de intentarla. El aviso queda a la vista a
      propósito, no silenciado. */
   useEffect(() => {
-    const r = guardar(estado)
+    const r = guardar(estado, clave)
     setErrorAlmacenamiento(r.ok ? null : r.motivo)
-  }, [estado])
+  }, [estado, clave])
 
   /* Las preferencias se aplican al <html>: los tokens hacen el resto. */
   useEffect(() => {
@@ -247,6 +280,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       anunciar,
       errorAlmacenamiento,
       nuevoId,
+      usuarioId,
+      sync,
     }),
     [
       estado,
@@ -257,6 +292,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       anuncio,
       anunciar,
       errorAlmacenamiento,
+      usuarioId,
+      sync,
     ],
   )
 
