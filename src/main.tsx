@@ -11,7 +11,8 @@ createRoot(document.getElementById('root')!).render(
 
 /* El service worker solo funciona servido por http(s). Cuando el build se abre
    con doble clic (file://) el navegador rechaza el registro, así que ni se
-   intenta: la app funciona igual, solo sin caché offline. */
-if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
+   intenta: la app funciona igual, solo sin caché offline. En `npm run dev` no
+   existe sw.js (lo genera el build), así que tampoco se intenta. */
+if (import.meta.env.PROD && location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {})
 }

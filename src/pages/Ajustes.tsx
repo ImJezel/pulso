@@ -15,8 +15,23 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Database, Info, Trash2, Type, User } from 'lucide-react'
+import {
+  AlertTriangle,
+  Cloud,
+  CloudOff,
+  Database,
+  Info,
+  KeyRound,
+  LogOut,
+  RefreshCw,
+  Trash2,
+  Type,
+  User,
+  UserX,
+} from 'lucide-react'
 import { usePulso } from '../context/AppContext'
+import { useSesion, LARGO_MINIMO_CONTRASENA } from '../context/SesionContext'
+import type { EstadoSync } from '../context/useSincronizacion'
 import { Tarjeta, TituloSeccion } from '../components/Tarjeta'
 import Boton from '../components/Boton'
 import Panel, { Confirmacion } from '../components/Panel'
@@ -31,6 +46,20 @@ const ESCALAS: { id: Preferencias['escalaTexto']; etiqueta: string; muestra: str
   { id: 'muy-grande', etiqueta: 'Muy grande', muestra: '23 px' },
 ]
 
+/** Cómo se dice cada estado de la conexión: con ícono Y texto, nunca solo color. */
+const TEXTO_SYNC: Partial<Record<EstadoSync, { Icono: typeof Cloud; texto: string }>> = {
+  'al-dia': { Icono: Cloud, texto: 'Todo está guardado en tu cuenta.' },
+  guardando: { Icono: RefreshCw, texto: 'Guardando en tu cuenta…' },
+  pendiente: {
+    Icono: CloudOff,
+    texto: 'Sin conexión. Los cambios se subirán solos cuando vuelva el internet.',
+  },
+  error: {
+    Icono: AlertTriangle,
+    texto: 'No se pudieron guardar los últimos cambios. Están en este dispositivo y se volverá a intentar.',
+  },
+}
+
 const txt = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n))
 const num = (v: string): number | null => {
   const n = Number(v)
@@ -38,13 +67,60 @@ const num = (v: string): number | null => {
 }
 
 export default function Ajustes() {
-  const { estado, despachar, despacharConDeshacer, anunciar } = usePulso()
+  const { estado, despachar, despacharConDeshacer, anunciar, sync } = usePulso()
+  const { configurado, usuario, salir, cambiarContrasena, eliminarCuenta } = useSesion()
+  const conCuenta = configurado && usuario !== null
   const p = estado.preferencias
   const perfil = estado.perfil
 
   const [editando, setEditando] = useState(false)
   const [confirmarBorrado, setConfirmarBorrado] = useState(false)
   const [palabra, setPalabra] = useState('')
+
+  /* --- Cuenta ------------------------------------------------------------ */
+  const [saliendo, setSaliendo] = useState(false)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
+  const [cambiandoClave, setCambiandoClave] = useState(false)
+  const [claveNueva, setClaveNueva] = useState('')
+  const [mostrarClave, setMostrarClave] = useState(false)
+  const [errorClave, setErrorClave] = useState<string | null>(null)
+  const [guardandoClave, setGuardandoClave] = useState(false)
+  const [confirmarEliminar, setConfirmarEliminar] = useState(false)
+  const [palabraEliminar, setPalabraEliminar] = useState('')
+  const [errorCuenta, setErrorCuenta] = useState<string | null>(null)
+
+  /** Antes de salir se intenta subir lo pendiente: cerrar sesión borra la copia local. */
+  async function cerrarSesion() {
+    setSaliendo(true)
+    const todoGuardado = await sync.enviarAhora()
+    setSaliendo(false)
+    if (todoGuardado) await salir()
+    else setConfirmarSalida(true)
+  }
+
+  async function guardarClave() {
+    if (claveNueva.length < LARGO_MINIMO_CONTRASENA) {
+      setErrorClave(`Usa al menos ${LARGO_MINIMO_CONTRASENA} caracteres.`)
+      return
+    }
+    setGuardandoClave(true)
+    const error = await cambiarContrasena(claveNueva)
+    setGuardandoClave(false)
+    if (error) {
+      setErrorClave(error)
+      return
+    }
+    setCambiandoClave(false)
+    setClaveNueva('')
+    anunciar('Contraseña cambiada.')
+  }
+
+  async function confirmarEliminacion() {
+    setConfirmarEliminar(false)
+    const error = await eliminarCuenta()
+    if (error) setErrorCuenta(error)
+    // Si salió bien la sesión se cierra y la app vuelve a la pantalla «Entrar».
+  }
 
   const [borrador, setBorrador] = useState(() => ({
     nombre: perfil?.nombre ?? '',
@@ -202,6 +278,89 @@ export default function Ajustes() {
         </Tarjeta>
       </section>
 
+      {/* --- Cuenta -------------------------------------------------------- */}
+      {conCuenta && (
+        <section aria-labelledby="t-cuenta">
+          <TituloSeccion id="t-cuenta">Tu cuenta</TituloSeccion>
+          <Tarjeta className="space-y-4 px-4 py-4">
+            <div>
+              <p className="text-[0.9rem] text-bruma-texto">Entraste con</p>
+              <p className="break-all font-semibold text-tinta">{usuario?.email}</p>
+              {TEXTO_SYNC[sync.estado] &&
+                (() => {
+                  const { Icono, texto } = TEXTO_SYNC[sync.estado]!
+                  return (
+                    <p className="mt-2 flex items-start gap-2 text-[0.95rem] text-tinta">
+                      <Icono size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-salvia-fuerte" />
+                      {texto}
+                    </p>
+                  )
+                })()}
+              {sync.estado === 'error' && sync.detalle && (
+                <p className="mt-1 break-words text-[0.85rem] text-bruma-texto">
+                  Detalle técnico: {sync.detalle}
+                </p>
+              )}
+              {(sync.estado === 'error' || sync.estado === 'pendiente') && (
+                <Boton
+                  className="mt-2"
+                  onClick={sync.reintentar}
+                  icono={<RefreshCw size={18} aria-hidden="true" />}
+                >
+                  Reintentar ahora
+                </Boton>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2 border-t border-borde pt-4">
+              <Boton
+                onClick={() => {
+                  setClaveNueva('')
+                  setErrorClave(null)
+                  setCambiandoClave(true)
+                }}
+                icono={<KeyRound size={18} aria-hidden="true" />}
+              >
+                Cambiar contraseña
+              </Boton>
+              <Boton
+                onClick={() => void cerrarSesion()}
+                disabled={saliendo}
+                icono={<LogOut size={18} aria-hidden="true" />}
+              >
+                {saliendo ? 'Guardando antes de salir…' : 'Cerrar sesión'}
+              </Boton>
+            </div>
+
+            <div className="border-t border-borde pt-4">
+              <p className="flex items-center gap-2 font-semibold text-ladrillo">
+                <UserX size={18} aria-hidden="true" /> Eliminar mi cuenta
+              </p>
+              <p className="mt-1 text-[0.95rem] text-bruma-texto">
+                Borra tu cuenta y todos tus datos del servidor y de este dispositivo. No se puede
+                deshacer.
+              </p>
+              {errorCuenta && (
+                <p role="alert" className="mt-2 font-semibold text-ambar-texto">
+                  {errorCuenta}
+                </p>
+              )}
+              <Boton
+                variante="peligro"
+                className="mt-3"
+                onClick={() => {
+                  setPalabraEliminar('')
+                  setErrorCuenta(null)
+                  setConfirmarEliminar(true)
+                }}
+              >
+                Eliminar mi cuenta
+              </Boton>
+            </div>
+          </Tarjeta>
+        </section>
+      )}
+
       {/* --- Datos --------------------------------------------------------- */}
       <section aria-labelledby="t-datos">
         <TituloSeccion id="t-datos">Datos</TituloSeccion>
@@ -239,8 +398,9 @@ export default function Ajustes() {
               <Trash2 size={18} aria-hidden="true" /> Borrar todos mis datos
             </p>
             <p className="mt-1 text-[0.95rem] text-bruma-texto">
-              Elimina perfil, medicamentos, mediciones y citas de este dispositivo. No hay copia en
-              ningún servidor, así que no se puede recuperar después.
+              {conCuenta
+                ? 'Elimina perfil, medicamentos, mediciones y citas de tu cuenta y de este dispositivo. Tu cuenta sigue abierta. No se puede recuperar después.'
+                : 'Elimina perfil, medicamentos, mediciones y citas de este dispositivo. No hay copia en ningún servidor, así que no se puede recuperar después.'}
             </p>
             <Boton
               variante="peligro"
@@ -274,10 +434,17 @@ export default function Ajustes() {
             <li>No es un expediente clínico ni sustituye a tu médico.</li>
             <li>No interpreta síntomas.</li>
             <li>No se conecta con farmacias, seguros ni laboratorios.</li>
-            <li>
-              No tiene cuentas de usuario ni servidor: <strong>tus datos se quedan en este
-              dispositivo</strong>. Si borras los datos del navegador, se van con ellos.
-            </li>
+            {conCuenta ? (
+              <li>
+                <strong>Tus datos se guardan en tu cuenta</strong>, protegidos para que solo tú
+                puedas verlos, y una copia en este dispositivo para usar la app sin internet.
+              </li>
+            ) : (
+              <li>
+                No tiene cuentas de usuario ni servidor: <strong>tus datos se quedan en este
+                dispositivo</strong>. Si borras los datos del navegador, se van con ellos.
+              </li>
+            )}
             <li>No recoge estadísticas de uso ni tiene rastreadores de terceros.</li>
           </ul>
           <p className="mt-3 text-[0.9rem] text-bruma-texto">
@@ -285,8 +452,8 @@ export default function Ajustes() {
             consulta con tu médico.
           </p>
           <p className="mt-4 border-t border-borde pt-3 text-[0.9rem] text-bruma-texto">
-            Proyecto final · Renglón Salud · ITLA 2026-C-2 · Rebeca Mary Astacio
-            Bryan (2025-2264).{' '}
+            Interacción Humano-Computadora · Renglón Salud · ITLA 2026-C-2 · Jezel Pujols
+            (2025-2067) y Rebeca Mary Astacio Bryan (2025-2264).{' '}
             <Link to="/calidad" className="text-salvia-fuerte underline underline-offset-4">
               Ver evaluación de calidad ISO/IEC 25010
             </Link>
@@ -390,7 +557,11 @@ export default function Ajustes() {
       <Confirmacion
         abierto={confirmarBorrado}
         titulo="Borrar todos mis datos"
-        mensaje="Se borrarán tu perfil, tus medicamentos, todas tus mediciones y tus citas de este dispositivo. Como Pulso no guarda nada en internet, no hay forma de recuperarlos."
+        mensaje={
+          conCuenta
+            ? 'Se borrarán tu perfil, tus medicamentos, todas tus mediciones y tus citas, en tu cuenta y en este dispositivo. No hay forma de recuperarlos.'
+            : 'Se borrarán tu perfil, tus medicamentos, todas tus mediciones y tus citas de este dispositivo. Como Pulso no guarda nada en internet, no hay forma de recuperarlos.'
+        }
         textoConfirmar="Borrar definitivamente"
         palabraClave="BORRAR"
         valorPalabra={palabra}
@@ -401,6 +572,64 @@ export default function Ajustes() {
           setConfirmarBorrado(false)
         }}
         onCancelar={() => setConfirmarBorrado(false)}
+      />
+
+      {/* --- Diálogos de la cuenta ----------------------------------------- */}
+      <Panel
+        abierto={cambiandoClave}
+        titulo="Cambiar contraseña"
+        onCerrar={() => setCambiandoClave(false)}
+        pie={
+          <>
+            <Boton onClick={() => setCambiandoClave(false)}>Cancelar</Boton>
+            <Boton variante="primario" onClick={() => void guardarClave()} disabled={guardandoClave}>
+              {guardandoClave ? 'Guardando…' : 'Guardar contraseña'}
+            </Boton>
+          </>
+        }
+      >
+        <CampoTexto
+          etiqueta="Contraseña nueva"
+          type={mostrarClave ? 'text' : 'password'}
+          autoComplete="new-password"
+          value={claveNueva}
+          onChange={(e) => setClaveNueva(e.target.value)}
+          error={errorClave}
+          ayuda={`Al menos ${LARGO_MINIMO_CONTRASENA} caracteres.`}
+        />
+        <label className="flex min-h-[3rem] cursor-pointer items-center gap-3 font-semibold text-tinta">
+          <input
+            type="checkbox"
+            checked={mostrarClave}
+            onChange={(e) => setMostrarClave(e.target.checked)}
+            className="h-6 w-6 accent-salvia-fuerte"
+          />
+          Mostrar contraseña
+        </label>
+      </Panel>
+
+      <Confirmacion
+        abierto={confirmarSalida}
+        titulo="Hay cambios sin subir"
+        mensaje="Algunos cambios todavía no llegan a tu cuenta porque no hay conexión. Si cierras sesión ahora, se perderán. Si esperas a tener internet, se subirán solos."
+        textoConfirmar="Cerrar sesión de todos modos"
+        onConfirmar={() => {
+          setConfirmarSalida(false)
+          void salir()
+        }}
+        onCancelar={() => setConfirmarSalida(false)}
+      />
+
+      <Confirmacion
+        abierto={confirmarEliminar}
+        titulo="Eliminar mi cuenta"
+        mensaje="Se borrará tu cuenta junto con tu perfil, tus medicamentos, tus dosis, tus mediciones y tus citas, del servidor y de este dispositivo. No hay forma de recuperarlos."
+        textoConfirmar="Eliminar la cuenta"
+        palabraClave="ELIMINAR"
+        valorPalabra={palabraEliminar}
+        onCambiarPalabra={setPalabraEliminar}
+        onConfirmar={() => void confirmarEliminacion()}
+        onCancelar={() => setConfirmarEliminar(false)}
       />
     </div>
   )

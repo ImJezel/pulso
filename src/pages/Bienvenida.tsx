@@ -193,7 +193,7 @@ export default function Bienvenida() {
 
             <h3 className="mb-1 font-display text-[1.15rem]">Contacto de emergencia</h3>
             <p className="mb-3 text-[0.95rem] text-bruma-texto">
-              Opcional. Solo aparece en tu informe impreso; no se envía a ningún lado.
+              Opcional. Solo aparece en tu informe impreso; Pulso nunca lo contacta.
             </p>
             <CampoTexto
               etiqueta="Nombre"
