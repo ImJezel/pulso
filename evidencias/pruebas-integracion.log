@@ -1,0 +1,68 @@
+
+ RUN  v4.1.11 C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso
+
+stderr | tests/integracion/supabase.test.ts
+GoTrueClient@sb-vugtvzsazgmfsolugltk-auth-token:1 (2.118.0) 2026-11-03T03:31:07.406Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+GoTrueClient@sb-vugtvzsazgmfsolugltk-auth-token:2 (2.118.0) 2026-11-03T03:31:07.407Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > guarda el caso de demostración completo y lo devuelve idéntico
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > manda solo las diferencias y el servidor queda igual que la app
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > repetir un envío no duplica nada (idempotente)
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > RLS: otro usuario no puede ver, cambiar ni borrar los datos ajenos
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > sin sesión no se lee nada ni se puede eliminar una cuenta
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > «Borrar todos mis datos» vacía la cuenta pero conserva las preferencias
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integracion/supabase.test.ts > Supabase · base de datos real
+AuthRetryableFetchError: fetch failed
+ ❯ _handleRequest node_modules/@supabase/auth-js/src/lib/fetch.ts:235:10
+ ❯ _request node_modules/@supabase/auth-js/src/lib/fetch.ts:200:15
+ ❯ SupabaseAuthClient.signUp node_modules/@supabase/auth-js/src/GoTrueClient.ts:1046:14
+ ❯ crearUsuarioDePrueba tests/integracion/supabase.test.ts:32:27
+     30| async function crearUsuarioDePrueba(c: ClientePulso): Promise<string> {
+     31|   const sufijo = crypto.randomUUID().slice(0, 8)
+     32|   const { data, error } = await c.auth.signUp({
+       |                           ^
+     33|     email: `pulso.prueba.${sufijo}@example.com`,
+     34|     password: `Prueba-${crypto.randomUUID()}`,
+ ❯ tests/integracion/supabase.test.ts:58:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: +0, code: undefined }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/integracion/supabase.test.ts > Supabase · base de datos real
+AssertionError: expected { …(4) } to be null
+
+- Expected:
+null
+
++ Received:
+{
+  "code": "",
+  "details": "TypeError: fetch failed
+
+Caused by: Error: getaddrinfo ENOTFOUND vugtvzsazgmfsolugltk.supabase.co (ENOTFOUND)
+Error: getaddrinfo ENOTFOUND vugtvzsazgmfsolugltk.supabase.co
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)",
+  "hint": "",
+  "message": "TypeError: fetch failed",
+}
+
+ ❯ tests/integracion/supabase.test.ts:64:55
+     62|   afterAll(async () => {
+     63|     // Los usuarios de prueba no se quedan en el proyecto.
+     64|     expect((await a.rpc('eliminar_mi_cuenta')).error).toBeNull()
+       |                                                       ^
+     65|     expect((await b.rpc('eliminar_mi_cuenta')).error).toBeNull()
+     66|   }, 30_000)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 skipped (6)
+   Start at  23:31:01
+   Duration  6.53s (transform 130ms, setup 355ms, import 3.64s, tests 106ms, environment 2.13s)
+

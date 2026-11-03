@@ -1,0 +1,146 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Entregable 4 – Reporte de pruebas – Pulso</title>
+<style>
+@page { size: A4; margin: 16mm 16mm 18mm; @bottom-center { content: counter(page); font: 9pt "Segoe UI"; color: #8A9A94; } }
+@page portada { @bottom-center { content: none } }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10pt; line-height: 1.45; color: #1f2937; margin: 0; }
+h1 { font-size: 16pt; color: #14312B; border-bottom: 2px solid #4E8C7A; padding-bottom: 4px; margin: 0 0 8px; break-before: page; }
+h2 { font-size: 12pt; color: #2F6B5B; margin: 14px 0 6px; }
+p { margin: 0 0 7px; text-align: justify; }
+table { width: 100%; border-collapse: collapse; font-size: 8.8pt; margin: 6px 0 10px; }
+th, td { border: 1px solid #CFD8D4; padding: 3px 6px; text-align: left; vertical-align: top; }
+th { background: #3E7565; color: #fff; } tr { break-inside: avoid; }
+tr:nth-child(even) td { background: #F6F3EC; }
+pre { background: #14312B; color: #E3EEEA; font: 8pt Consolas, monospace; padding: 8px 10px; white-space: pre-wrap; word-wrap: break-word; border-radius: 4px; }
+code { font-family: Consolas, monospace; }
+.cover { page: portada; height: 225mm; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; padding: 20mm 0 10mm; }
+.cover .t { font-size: 42pt; font-weight: 800; color: #4E8C7A; }
+.ok { color: #2F6B5B; font-weight: 700; } .ab { color: #A35E1C; font-weight: 700; }
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0 12px; }
+.kpi div { border: 1px solid #CFD8D4; padding: 8px; text-align: center; } .kpi b { display: block; font-size: 18pt; color: #14312B; }
+</style></head><body>
+<div class="cover">
+ <div><b style="font-size:14pt">INSTITUTO TECNOLÓGICO DE LAS AMÉRICAS (ITLA)</b><br><span style="color:#5F6F69;font-size:11.5pt">Programación III · Sección 2026-C-3<br>Facilitadora: Eduandy Isabel Cruz Abreu</span></div>
+ <div><div class="t">Pulso</div><div style="font-size:12pt">Aplicación web para el control de tratamientos de hipertensión y diabetes tipo 2</div>
+ <div style="font-size:16pt;font-weight:700;margin-top:14px;color:#14312B">Entregable 4 – Reporte de pruebas</div></div>
+ <table style="width:115mm;font-size:11pt"><tr><th>Integrante</th><th>Matrícula</th></tr><tr><td>Jezel Pujols</td><td>2025-2067</td></tr><tr><td>Rebeca Mary Astacio Bryan</td><td>2025-2264</td></tr></table>
+ <div style="color:#5F6F69">Repositorio: https://github.com/ImJezel/pulso<br>Santo Domingo, 2 de noviembre de 2026</div>
+</div>
+
+<h1>Resumen</h1>
+<p>Se probó Pulso (React + TypeScript + Supabase) en tres niveles: pruebas unitarias automáticas con Vitest, pruebas de integración contra la base de datos real de Supabase y una revisión de código adversarial. Todas las pruebas se ejecutan con <code>npm test</code> y <code>npm run test:integracion</code>.</p>
+<div class="kpi"><div><b>69</b>pruebas unitarias aprobadas</div><div><b>6/6</b>integración (27/10)</div><div><b>16</b>casos de prueba</div><div><b>6</b>incidencias registradas</div></div>
+<table><tr><th>Nivel</th><th>Herramienta</th><th>Resultado</th></tr>
+<tr><td>Unitarias</td><td>Vitest 4 + Testing Library (jsdom)</td><td class="ok">69 aprobadas, 0 fallidas (02/11/2026)</td></tr>
+<tr><td>Integración</td><td>Vitest contra Supabase real (Postgres + Auth + RLS)</td><td class="ok">6/6 aprobadas el 27/10/2026</td></tr>
+<tr><td>Integración (re-ejecución)</td><td>misma suite, 02/11/2026</td><td class="ab">No ejecutada: proyecto Supabase pausado (INC-06)</td></tr>
+<tr><td>Tipos y estilo</td><td>tsc (strict) · oxlint</td><td class="ok">0 errores</td></tr>
+<tr><td>Revisión de código</td><td>4 revisores + 2 verificadores por hallazgo</td><td>2 defectos altos confirmados (INC-04, INC-05)</td></tr></table>
+
+<h1>1. Plan de pruebas</h1>
+<p><b>Objetivo:</b> comprobar que los módulos de usuarios, perfil, medicamentos y dosis, mediciones y sincronización con la base de datos funcionan correctamente y que ningún usuario puede acceder a los datos de otro. <b>Alcance:</b> lógica de dominio (src/lib), motor de sincronización (src/context) y base de datos (supabase/migrations). <b>Criterio de aprobación:</b> todas las pruebas automáticas en verde y ningún defecto de severidad alta abierto en los flujos principales.</p>
+<table><tr><th>ID</th><th>Módulo</th><th>Caso</th><th>Resultado esperado</th><th>Tipo de prueba</th></tr><tr><td>CP-01</td><td>Usuarios</td><td>Crear cuenta con correo y contraseña de 8+ caracteres</td><td>Sesión abierta y paso a Bienvenida</td><td>Integración (signUp real)</td></tr><tr><td>CP-02</td><td>Usuarios</td><td>Entrar con datos vacíos o correo inválido</td><td>Mensajes bajo el campo, no se envía nada</td><td>Manual / navegador</td></tr><tr><td>CP-03</td><td>Usuarios</td><td>Eliminar mi cuenta</td><td>Usuario y todos sus datos borrados en cascada</td><td>Integración</td></tr><tr><td>CP-04</td><td>Seguridad</td><td>Usuario B intenta leer, modificar y borrar datos de A</td><td>0 filas / error RLS; datos de A intactos</td><td>Integración</td></tr><tr><td>CP-05</td><td>Seguridad</td><td>Consulta sin sesión (rol anónimo)</td><td>No devuelve datos, no puede eliminar cuentas</td><td>Integración</td></tr><tr><td>CP-06</td><td>Mediciones</td><td>Clasificar valor contra rango del médico (límites, ±10 %)</td><td>en-rango / atención / fuera de rango</td><td>Unitaria (rangos)</td></tr><tr><td>CP-07</td><td>Mediciones</td><td>Perfil sin rangos definidos</td><td>sin-referencia, no se colorea nada</td><td>Unitaria (rangos)</td></tr><tr><td>CP-08</td><td>Dosis</td><td>Calcular adherencia sin contar dosis futuras</td><td>Porcentaje correcto</td><td>Unitaria (adherencia)</td></tr><tr><td>CP-09</td><td>Dosis</td><td>Eliminar medicamento</td><td>Se borran también sus registros de dosis</td><td>Unitaria (storage) + Integración</td></tr><tr><td>CP-10</td><td>Datos</td><td>Guardar el caso de demostración completo y leerlo</td><td>Datos idénticos tras ir y volver</td><td>Unitaria + Integración</td></tr><tr><td>CP-11</td><td>Sincronización</td><td>Marcar una dosis</td><td>Se envía solo esa dosis</td><td>Unitaria (remoto, sincronización)</td></tr><tr><td>CP-12</td><td>Sincronización</td><td>Abrir con cambios pendientes</td><td>Primero sube, luego descarga</td><td>Unitaria (sincronización)</td></tr><tr><td>CP-13</td><td>Sincronización</td><td>Sin internet con cambios pendientes</td><td>No se pisan los cambios locales</td><td>Unitaria (sincronización)</td></tr><tr><td>CP-14</td><td>Sincronización</td><td>Cambio durante un envío en curso</td><td>Se envía después, sin perderse</td><td>Unitaria (sincronización)</td></tr><tr><td>CP-15</td><td>Almacenamiento</td><td>JSON local corrupto</td><td>Arranca limpio y guarda copia rota</td><td>Unitaria (storage)</td></tr><tr><td>CP-16</td><td>Fechas</td><td>Edad el día del cumpleaños antes del mediodía</td><td>Años ya cumplidos</td><td>Unitaria (fechas)</td></tr></table>
+
+<h1>2. Pruebas unitarias</h1>
+<p>Se implementaron <b>69</b> pruebas unitarias en 6 archivos. Se ejecutan sin red: el motor de sincronización se prueba con Supabase simulado (<code>vi.mock</code>).</p>
+<table><tr><th>Archivo</th><th>Pruebas</th><th>Qué cubre</th></tr><tr><td>rangos.test.ts</td><td>10</td><td>Clasificación de mediciones contra los rangos del médico</td></tr><tr><td>adherencia.test.ts</td><td>11</td><td>Dosis del día, porcentaje de cumplimiento, cinta del día</td></tr><tr><td>fechas.test.ts</td><td>11</td><td>Formatos es-DO, edad, fechas relativas</td></tr><tr><td>storage.test.ts</td><td>12</td><td>Persistencia local, JSON corrupto, reducer</td></tr><tr><td>remoto.test.ts</td><td>17</td><td>Traducción estado ⇄ tablas y cálculo de cambios</td></tr><tr><td>sincronizacion.test.tsx</td><td>8</td><td>Orden de operaciones y modo sin conexión</td></tr></table>
+<h2>Resultado de la ejecución (02/11/2026)</h2>
+<pre> Test Files  6 passed | 1 skipped (7)
+      Tests  69 passed | 6 skipped (75)
+   Duration  16.55s (transform 1.60s, setup 9.96s, import 42.91s, tests 2.52s, environment 34.43s)</pre>
+<h2>Detalle de cada prueba</h2>
+<table><tr><th>#</th><th>Archivo</th><th>Prueba</th><th>Resultado</th></tr><tr><td>1</td><td>rangos.test.ts</td><td>clasificarValor › lo que cae dentro del intervalo está en rango, incluidos los extremos</td><td>✓ Aprobada</td></tr><tr><td>2</td><td>rangos.test.ts</td><td>clasificarValor › hasta 10 % por encima del máximo es atención, más allá es fuera de rango</td><td>✓ Aprobada</td></tr><tr><td>3</td><td>rangos.test.ts</td><td>clasificarValor › hasta 10 % por debajo del mínimo es atención, más allá es fuera de rango</td><td>✓ Aprobada</td></tr><tr><td>4</td><td>rangos.test.ts</td><td>peor › se queda con la clasificación más seria</td><td>✓ Aprobada</td></tr><tr><td>5</td><td>rangos.test.ts</td><td>peor › ignora las que no tienen referencia, salvo que no haya ninguna otra</td><td>✓ Aprobada</td></tr><tr><td>6</td><td>rangos.test.ts</td><td>clasificar › en presión manda la peor de las dos cifras</td><td>✓ Aprobada</td></tr><tr><td>7</td><td>rangos.test.ts</td><td>clasificar › sin rangos definidos devuelve sin-referencia y no inventa nada</td><td>✓ Aprobada</td></tr><tr><td>8</td><td>rangos.test.ts</td><td>clasificar › la glucosa usa el intervalo del contexto declarado</td><td>✓ Aprobada</td></tr><tr><td>9</td><td>rangos.test.ts</td><td>clasificar › sin contexto usa el intervalo de ayunas, que es el más estricto</td><td>✓ Aprobada</td></tr><tr><td>10</td><td>rangos.test.ts</td><td>valorPrincipal › la presión se muestra como sistólica/diastólica</td><td>✓ Aprobada</td></tr><tr><td>11</td><td>fechas.test.ts</td><td>isoLocal › guarda la hora local sin zona, sin desplazar el día</td><td>✓ Aprobada</td></tr><tr><td>12</td><td>fechas.test.ts</td><td>isoLocal › rellena con ceros los meses, días y horas de una cifra</td><td>✓ Aprobada</td></tr><tr><td>13</td><td>fechas.test.ts</td><td>isoLocal › claveDia y paraInput recortan lo que corresponde</td><td>✓ Aprobada</td></tr><tr><td>14</td><td>fechas.test.ts</td><td>formatos en español dominicano › la fecha corta es dd/mm/aaaa</td><td>✓ Aprobada</td></tr><tr><td>15</td><td>fechas.test.ts</td><td>formatos en español dominicano › la fecha larga empieza en mayúscula y va en español</td><td>✓ Aprobada</td></tr><tr><td>16</td><td>fechas.test.ts</td><td>formatos en español dominicano › la hora va en español, con a. m. y p. m.</td><td>✓ Aprobada</td></tr><tr><td>17</td><td>fechas.test.ts</td><td>sumarDias › cruza el cambio de mes correctamente</td><td>✓ Aprobada</td></tr><tr><td>18</td><td>fechas.test.ts</td><td>edad › devuelve null si no hay fecha o si no es válida</td><td>✓ Aprobada</td></tr><tr><td>19</td><td>fechas.test.ts</td><td>edad › calcula años cumplidos</td><td>✓ Aprobada</td></tr><tr><td>20</td><td>fechas.test.ts</td><td>citaComoICS › produce un iCalendar con la estructura mínima que exige el estándar</td><td>✓ Aprobada</td></tr><tr><td>21</td><td>fechas.test.ts</td><td>citaComoICS › escapa las comas, que en iCalendar separan valores</td><td>✓ Aprobada</td></tr><tr><td>22</td><td>adherencia.test.ts</td><td>calcularAdherencia › cuenta tomadas sobre programadas</td><td>✓ Aprobada</td></tr><tr><td>23</td><td>adherencia.test.ts</td><td>calcularAdherencia › NO cuenta las dosis futuras del día en curso</td><td>✓ Aprobada</td></tr><tr><td>24</td><td>adherencia.test.ts</td><td>calcularAdherencia › una dosis pasada sin marcar sí cuenta en el denominador</td><td>✓ Aprobada</td></tr><tr><td>25</td><td>adherencia.test.ts</td><td>calcularAdherencia › sin dosis programadas devuelve null, no 0 %</td><td>✓ Aprobada</td></tr><tr><td>26</td><td>adherencia.test.ts</td><td>calcularAdherencia › ignora lo que cae fuera del período</td><td>✓ Aprobada</td></tr><tr><td>27</td><td>adherencia.test.ts</td><td>sincronizarDosis › crea las dosis que faltan sin pisar las ya marcadas</td><td>✓ Aprobada</td></tr><tr><td>28</td><td>adherencia.test.ts</td><td>sincronizarDosis › no crea dosis anteriores a la fecha en que se agregó el medicamento</td><td>✓ Aprobada</td></tr><tr><td>29</td><td>adherencia.test.ts</td><td>sincronizarDosis › no programa nada para un medicamento desactivado</td><td>✓ Aprobada</td></tr><tr><td>30</td><td>adherencia.test.ts</td><td>cinta del día › ordena las marcas por hora y detecta las vencidas</td><td>✓ Aprobada</td></tr><tr><td>31</td><td>adherencia.test.ts</td><td>utilidades › dosisProgramadasDelDia arma una entrada por horario</td><td>✓ Aprobada</td></tr><tr><td>32</td><td>adherencia.test.ts</td><td>utilidades › fechaHoraDosis compone la fecha ISO local del día y la hora</td><td>✓ Aprobada</td></tr><tr><td>33</td><td>sincronizacion.test.tsx</td><td>arranque › trae lo del servidor, lo usa como base y queda al día</td><td>✓ Aprobada</td></tr><tr><td>34</td><td>storage.test.ts</td><td>cargar / guardar › sin nada guardado devuelve el estado inicial</td><td>✓ Aprobada</td></tr><tr><td>35</td><td>storage.test.ts</td><td>cargar / guardar › lo que se guarda es lo que se lee</td><td>✓ Aprobada</td></tr><tr><td>36</td><td>storage.test.ts</td><td>cargar / guardar › con un JSON corrupto no revienta: arranca limpio y conserva la copia rota</td><td>✓ Aprobada</td></tr><tr><td>37</td><td>storage.test.ts</td><td>cargar / guardar › borrarTodo deja el almacenamiento sin la clave de Pulso</td><td>✓ Aprobada</td></tr><tr><td>38</td><td>storage.test.ts</td><td>normalizar › rellena lo que falte en un estado a medias</td><td>✓ Aprobada</td></tr><tr><td>39</td><td>storage.test.ts</td><td>normalizar › con basura devuelve el estado inicial</td><td>✓ Aprobada</td></tr><tr><td>40</td><td>storage.test.ts</td><td>nuevoId › no repite identificadores</td><td>✓ Aprobada</td></tr><tr><td>41</td><td>storage.test.ts</td><td>reducer › eliminar un medicamento se lleva también sus registros de dosis</td><td>✓ Aprobada</td></tr><tr><td>42</td><td>storage.test.ts</td><td>reducer › borrar todo conserva las preferencias de accesibilidad</td><td>✓ Aprobada</td></tr><tr><td>43</td><td>storage.test.ts</td><td>reducer › marcar una dosis deja constancia de cuándo se registró</td><td>✓ Aprobada</td></tr><tr><td>44</td><td>storage.test.ts</td><td>datos de demostración › genera un caso completo y rotulado como ficticio</td><td>✓ Aprobada</td></tr><tr><td>45</td><td>storage.test.ts</td><td>datos de demostración › es determinista: dos generaciones del mismo día dan lo mismo</td><td>✓ Aprobada</td></tr><tr><td>46</td><td>remoto.test.ts</td><td>aFilas / desdeFilas › el caso de demostración va y vuelve sin perder nada</td><td>✓ Aprobada</td></tr><tr><td>47</td><td>remoto.test.ts</td><td>aFilas / desdeFilas › todas las filas llevan el id del usuario dueño</td><td>✓ Aprobada</td></tr><tr><td>48</td><td>remoto.test.ts</td><td>aFilas / desdeFilas › lee las horas como las devuelve Postgres (hh:mm:ss) y las deja en hh:mm</td><td>✓ Aprobada</td></tr><tr><td>49</td><td>remoto.test.ts</td><td>aFilas / desdeFilas › una hora repetida no genera dos filas (violaría la clave primaria)</td><td>✓ Aprobada</td></tr><tr><td>50</td><td>remoto.test.ts</td><td>aFilas / desdeFilas › sin perfil no hay filas de perfil, rangos ni condiciones</td><td>✓ Aprobada</td></tr><tr><td>51</td><td>remoto.test.ts</td><td>aFilas / desdeFilas › un rango a medias vuelve como &quot;sin rango&quot;, no como un rango inventado</td><td>✓ Aprobada</td></tr><tr><td>52</td><td>remoto.test.ts</td><td>igual › no le importa el orden de las claves</td><td>✓ Aprobada</td></tr><tr><td>53</td><td>remoto.test.ts</td><td>igual › ignora propiedades undefined, igual que JSON</td><td>✓ Aprobada</td></tr><tr><td>54</td><td>remoto.test.ts</td><td>igual › sí distingue valores distintos</td><td>✓ Aprobada</td></tr><tr><td>55</td><td>remoto.test.ts</td><td>calcularCambios › sin base conocida sube todo y no borra nada</td><td>✓ Aprobada</td></tr><tr><td>56</td><td>remoto.test.ts</td><td>calcularCambios › si nada cambió no hay nada que mandar</td><td>✓ Aprobada</td></tr><tr><td>57</td><td>remoto.test.ts</td><td>calcularCambios › marcar una dosis manda solo esa dosis</td><td>✓ Aprobada</td></tr><tr><td>58</td><td>remoto.test.ts</td><td>calcularCambios › eliminar un medicamento lo borra junto con sus dosis</td><td>✓ Aprobada</td></tr><tr><td>59</td><td>remoto.test.ts</td><td>calcularCambios › cambiar el perfil o los rangos marca el perfil para guardar</td><td>✓ Aprobada</td></tr><tr><td>60</td><td>remoto.test.ts</td><td>calcularCambios › borrar todo borra el perfil pero no toca las preferencias</td><td>✓ Aprobada</td></tr><tr><td>61</td><td>remoto.test.ts</td><td>calcularCambios › sin base y sin perfil no se borra el perfil del servidor</td><td>✓ Aprobada</td></tr><tr><td>62</td><td>remoto.test.ts</td><td>calcularCambios › deshacer (volver al estado anterior) revierte exactamente lo hecho</td><td>✓ Aprobada</td></tr><tr><td>63</td><td>sincronizacion.test.tsx</td><td>arranque › primera vez en el dispositivo y sin internet: no muestra una app vacía</td><td>✓ Aprobada</td></tr><tr><td>64</td><td>sincronizacion.test.tsx</td><td>arranque › con cambios pendientes, los sube ANTES de traer lo del servidor</td><td>✓ Aprobada</td></tr><tr><td>65</td><td>sincronizacion.test.tsx</td><td>arranque › con cambios pendientes y sin internet, NO trae lo del servidor (lo pisaría)</td><td>✓ Aprobada</td></tr><tr><td>66</td><td>sincronizacion.test.tsx</td><td>después de abrir › un cambio se envía solo, y solo la diferencia</td><td>✓ Aprobada</td></tr><tr><td>67</td><td>sincronizacion.test.tsx</td><td>después de abrir › un cambio que llega durante un envío se manda después, sin perderse</td><td>✓ Aprobada</td></tr><tr><td>68</td><td>sincronizacion.test.tsx</td><td>después de abrir › si el servidor rechaza un cambio, avisa con el detalle y no avanza la base</td><td>✓ Aprobada</td></tr><tr><td>69</td><td>sincronizacion.test.tsx</td><td>después de abrir › enviarAhora devuelve false si no se pudo subir (para avisar antes de cerrar sesión)</td><td>✓ Aprobada</td></tr></table>
+
+<h1>3. Pruebas de integración</h1>
+<p>Archivo <code>tests/integracion/supabase.test.ts</code>. Crea dos usuarios de prueba reales en Supabase, ejecuta procesos completos usando la misma capa de datos que la aplicación (<code>aplicarCambios</code> y <code>cargarRemoto</code>) y al final elimina ambos usuarios con la función <code>eliminar_mi_cuenta()</code>.</p>
+<table><tr><th>#</th><th>Proceso completo</th><th>Qué verifica</th><th>Resultado 27/10</th></tr><tr><td>1</td><td>Guarda el caso de demostración completo y lo devuelve idéntico</td><td>Perfil, 3 medicamentos, ~250 dosis, 90+ mediciones y citas se escriben en las 9 tablas y se leen iguales.</td><td>✓ Aprobada</td></tr><tr><td>2</td><td>Manda solo las diferencias y el servidor queda igual que la app</td><td>Marcar dosis + eliminar medicamento + editar cita + cambiar preferencias → solo esos cambios viajan.</td><td>✓ Aprobada</td></tr><tr><td>3</td><td>Repetir un envío no duplica nada (idempotente)</td><td>Reenviar todo el estado deja el servidor igual.</td><td>✓ Aprobada</td></tr><tr><td>4</td><td>RLS: otro usuario no puede ver, cambiar ni borrar los datos ajenos</td><td>Usuario B obtiene 0 filas y error al intentar escribir sobre A.</td><td>✓ Aprobada</td></tr><tr><td>5</td><td>Sin sesión no se lee nada ni se puede eliminar una cuenta</td><td>El rol anónimo no tiene permisos.</td><td>✓ Aprobada</td></tr><tr><td>6</td><td>«Borrar todos mis datos» vacía la cuenta pero conserva las preferencias</td><td>Perfil y colecciones quedan vacíos; preferencias intactas.</td><td>✓ Aprobada</td></tr></table>
+<h2>Salida de la ejecución del 27/10/2026</h2>
+<pre>npx vitest run tests/integracion --mode integracion
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  00:16:22
+   Duration  13.34s</pre>
+<h2>Re-ejecución del 02/11/2026 (ver INC-06)</h2>
+<pre> FAIL  tests/integracion/supabase.test.ts &gt; Supabase · base de datos real
+AuthRetryableFetchError: fetch failed
+ FAIL  tests/integracion/supabase.test.ts &gt; Supabase · base de datos real
+  &quot;details&quot;: &quot;TypeError: fetch failed
+Caused by: Error: getaddrinfo ENOTFOUND vugtvzsazgmfsolugltk.supabase.co (ENOTFOUND)
+Error: getaddrinfo ENOTFOUND vugtvzsazgmfsolugltk.supabase.co
+  &quot;message&quot;: &quot;TypeError: fetch failed&quot;,
+ Test Files  1 failed (1)
+      Tests  6 skipped (6)</pre>
+
+<h1>4. Registro de incidencias</h1>
+<table><tr><th>ID</th><th>Severidad</th><th>Descripción</th><th>Cómo se detectó</th><th>Corrección</th><th>Estado</th></tr><tr><td>INC-01</td><td>Media</td><td>edad() restaba un año el día del cumpleaños antes de las 12:00 (parseaba la fecha al mediodía).</td><td>Detectado por la prueba unitaria de fechas a las 00:01.</td><td>Corregido (commit b6e68a6): se parsea a medianoche local.</td><td>Cerrada</td></tr><tr><td>INC-02</td><td>Baja</td><td>En npm run dev la consola mostraba «An unknown error occurred when fetching the script».</td><td>Revisión de la consola del navegador.</td><td>El service worker solo se registra en producción (import.meta.env.PROD).</td><td>Cerrada</td></tr><tr><td>INC-03</td><td>Media</td><td>config push falló: «Please upgrade the project to a paid tier to enable vector buckets».</td><td>Log de la CLI de Supabase.</td><td>Se desactivó [storage.vector] en supabase/config.toml.</td><td>Cerrada</td></tr><tr><td>INC-04</td><td>Alta</td><td>Dispositivo con copia vieja queda bloqueado por violación de clave foránea si el medicamento se borró en otro dispositivo (error 23503 en cada reintento).</td><td>Revisión de código adversarial (2 verificadores confirmaron).</td><td>Propuesta: ante un rechazo del servidor, recargar lo remoto como nueva base y descartar dosis huérfanas.</td><td>Abierta</td></tr><tr><td>INC-05</td><td>Alta</td><td>Un dispositivo atrasado puede sobrescribir en el servidor una dosis «tomada» con «pendiente» (upsert sobre ids deterministas).</td><td>Revisión de código adversarial (2 verificadores confirmaron).</td><td>Propuesta: enviar dosis nuevas con ignoreDuplicates (ON CONFLICT DO NOTHING).</td><td>Abierta</td></tr><tr><td>INC-06</td><td>Media</td><td>El 02/11 las pruebas de integración fallan: getaddrinfo ENOTFOUND del proyecto Supabase.</td><td>Log pruebas-integracion.log.</td><td>Causa: el plan gratis pausa el proyecto tras 7 días sin uso. Solución: restaurarlo desde el panel de Supabase y volver a correr npm run test:integracion.</td><td>Abierta</td></tr></table>
+<p><b>Resumen:</b> 3 incidencias cerradas y 3 abiertas. Las dos abiertas de severidad alta (INC-04 e INC-05) solo ocurren cuando la misma cuenta se usa en dos dispositivos a la vez; el uso en un solo dispositivo no se ve afectado. Su corrección queda planificada para la siguiente iteración.</p>
+
+<h1>5. Evidencias</h1>
+<p>Los registros completos están en la carpeta <code>evidencias/</code> del repositorio: <code>pruebas-unitarias.log</code> y <code>pruebas-integracion.log</code>, generados con <code>--reporter=verbose</code>.</p>
+<h2>Log de pruebas unitarias (extracto)</h2>
+<pre>
+ RUN  v4.1.11 C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso
+
+ ✓ tests/rangos.test.ts &gt; clasificarValor &gt; lo que cae dentro del intervalo está en rango, incluidos los extremos 3ms
+ ✓ tests/rangos.test.ts &gt; clasificarValor &gt; hasta 10 % por encima del máximo es atención, más allá es fuera de rango 0ms
+ ✓ tests/rangos.test.ts &gt; clasificarValor &gt; hasta 10 % por debajo del mínimo es atención, más allá es fuera de rango 0ms
+ ✓ tests/rangos.test.ts &gt; peor &gt; se queda con la clasificación más seria 0ms
+ ✓ tests/rangos.test.ts &gt; peor &gt; ignora las que no tienen referencia, salvo que no haya ninguna otra 0ms
+ ✓ tests/rangos.test.ts &gt; clasificar &gt; en presión manda la peor de las dos cifras 0ms
+ ✓ tests/rangos.test.ts &gt; clasificar &gt; sin rangos definidos devuelve sin-referencia y no inventa nada 0ms
+ ✓ tests/rangos.test.ts &gt; clasificar &gt; la glucosa usa el intervalo del contexto declarado 0ms
+ ✓ tests/rangos.test.ts &gt; clasificar &gt; sin contexto usa el intervalo de ayunas, que es el más estricto 0ms
+ ✓ tests/rangos.test.ts &gt; valorPrincipal &gt; la presión se muestra como sistólica/diastólica 0ms
+ ✓ tests/fechas.test.ts &gt; isoLocal &gt; guarda la hora local sin zona, sin desplazar el día 4ms
+ ✓ tests/fechas.test.ts &gt; isoLocal &gt; rellena con ceros los meses, días y horas de una cifra 0ms
+ ✓ tests/fechas.test.ts &gt; isoLocal &gt; claveDia y paraInput recortan lo que corresponde 0ms
+ ✓ tests/fechas.test.ts &gt; formatos en español dominicano &gt; la fecha corta es dd/mm/aaaa 2ms
+ ✓ tests/fechas.test.ts &gt; formatos en español dominicano &gt; la fecha larga empieza en mayúscula y va en español 1ms
+ ✓ tests/fechas.test.ts &gt; formatos en español dominicano &gt; la hora va en español, con a. m. y p. m. 1ms
+ ✓ tests/fechas.test.ts &gt; sumarDias &gt; cruza el cambio de mes correctamente 0ms
+ ✓ tests/fechas.test.ts &gt; edad &gt; devuelve null si no hay fecha o si no es válida 0ms
+ ✓ tests/fechas.test.ts &gt; edad &gt; calcula años cumplidos 0ms
+ ✓ tests/fechas.test.ts &gt; citaComoICS &gt; produce un iCalendar con la estructura mínima que exige el estándar 2ms
+ ✓ tests/fechas.test.ts &gt; citaComoICS &gt; escapa las comas, que en iCalendar separan valores 0ms
+ ✓ tests/adherencia.test.ts &gt; calcularAdherencia &gt; cuenta tomadas sobre programadas 4ms
+ ✓ tests/adherencia.test.ts &gt; calcularAdherencia &gt; NO cuenta las dosis futuras del día en curso 0ms
+ ✓ tests/adherencia.test.ts &gt; calcularAdherencia &gt; una dosis pasada sin marcar sí cuenta en el denominador 0ms
+ ✓ tests/adherencia.test.ts &gt; calcularAdherencia &gt; sin dosis programadas devuelve null, no 0 % 1ms
+ ✓ tests/adherencia.test.ts &gt; calcularAdherencia &gt; ignora lo que cae fuera del período 0ms
+ ✓ tests/adherencia.test.ts &gt; sincronizarDosis &gt; crea las dosis que faltan sin pisar las ya marcadas 19ms
+ ✓ tests/adherencia.test.ts &gt; sincronizarDosis &gt; no crea dosis anteriores a la fecha en que se agregó el medicamento 1ms
+ ✓ tests/adherencia.test.ts &gt; sincronizarDosis &gt; no programa nada para un medicamento desactivado 1ms
+ ✓ tests/adherencia.test.ts &gt; cinta del día &gt; ordena las marcas por hora y detecta las vencidas 2ms
+ ✓ tests/adherencia.test.ts &gt; utilidades &gt; dosisProgramadasDelDia arma una entrada por horario 1ms
+ ✓ tests/adherencia.test.ts &gt; utilidades &gt; fechaHoraDosis compone la fecha ISO local del día y la hora 0ms
+stderr | tests/integracion/supabase.test.ts
+GoTrueClient@sb-vugtvzsazgmfsolugltk-auth-token:1 (2.118.0) 2026-11-03T03:30:55.864Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+GoTrueClient@sb-vugtvzsazgmfsolugltk-auth-token:2 (2.118.0) 2026-11-03T03:30:55.866Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+ ↓ tests/integracion/supabase.test.ts &gt; Supabase · base de datos real &gt; guarda el caso de demostración completo y lo devuelve idéntico
+ ↓ tests/integracion/supabase.test.ts &gt; Supabase · base de datos real &gt; manda solo las diferencias y el servidor queda igual que la app
+ ↓ tests/integracion/supabase.test.ts &gt; Supabase · base de datos real &gt; repetir un envío no duplica nada (idempotente)
+ ↓ tests/integracion/supabase.test.ts &gt; Supabase · base de datos real &gt; RLS: otro usuario no puede ver, cambiar ni borrar los datos ajenos
+ ↓ tests/integracion/supabase.test.ts &gt; Supabase · base de datos real &gt; sin sesión no se lee nada ni se puede eliminar una cuenta
+ ↓ tests/integracion/supabase.test.ts &gt; Supabase · base de datos real &gt; «Borrar todos mis datos» vacía la cuenta pero conserva las preferencias</pre>
+<h2>Seguridad de la base de datos (RLS) — política aplicada a las 9 tablas</h2>
+<pre>create policy "solo el dueño" on public.&lt;tabla&gt; for all to authenticated
+  using ((select auth.uid()) = id_perfil)
+  with check ((select auth.uid()) = id_perfil);
+revoke all on table public.&lt;tabla&gt; from anon;</pre>
+<h2>Historial de commits del repositorio</h2>
+<pre>a2c46a4 feat(auth): módulo de usuarios con Supabase Auth
+69058a3 feat(sync): sincronización con Supabase que funciona sin conexión
+9a5ee5b feat(db): capa de datos remota con Supabase y pruebas contra la base real
+1b4d3b1 feat(db): esquema de Supabase con RLS por usuario y función para eliminar la cuenta
+b6e68a6 fix: la edad se cumple desde la medianoche del cumpleaños, no al mediodía
+600141a docs: README inicial del proyecto
+c7d07d8 chore: scripts de capturas, auditoría axe y recorrido de usuario
+a7f67d8 test: pruebas de rangos, adherencia, fechas y almacenamiento
+c9cb635 feat: pantallas Hoy, Registrar, Medicamentos, Historial, Citas, Informe y Ajustes
+49e74a7 feat: componentes base y tokens del sistema de diseño
+80dce8b feat: estado global con Context y useReducer, guardado y deshacer
+43492fc feat: modelo de datos y lógica de dominio (rangos, adherencia, fechas)
+1407b25 chore: configuración inicial con Vite, React, TypeScript y Tailwind
+</pre>
+</body></html>

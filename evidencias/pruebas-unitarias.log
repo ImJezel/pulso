@@ -1,0 +1,101 @@
+
+ RUN  v4.1.11 C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso
+
+ ✓ tests/rangos.test.ts > clasificarValor > lo que cae dentro del intervalo está en rango, incluidos los extremos 3ms
+ ✓ tests/rangos.test.ts > clasificarValor > hasta 10 % por encima del máximo es atención, más allá es fuera de rango 0ms
+ ✓ tests/rangos.test.ts > clasificarValor > hasta 10 % por debajo del mínimo es atención, más allá es fuera de rango 0ms
+ ✓ tests/rangos.test.ts > peor > se queda con la clasificación más seria 0ms
+ ✓ tests/rangos.test.ts > peor > ignora las que no tienen referencia, salvo que no haya ninguna otra 0ms
+ ✓ tests/rangos.test.ts > clasificar > en presión manda la peor de las dos cifras 0ms
+ ✓ tests/rangos.test.ts > clasificar > sin rangos definidos devuelve sin-referencia y no inventa nada 0ms
+ ✓ tests/rangos.test.ts > clasificar > la glucosa usa el intervalo del contexto declarado 0ms
+ ✓ tests/rangos.test.ts > clasificar > sin contexto usa el intervalo de ayunas, que es el más estricto 0ms
+ ✓ tests/rangos.test.ts > valorPrincipal > la presión se muestra como sistólica/diastólica 0ms
+ ✓ tests/fechas.test.ts > isoLocal > guarda la hora local sin zona, sin desplazar el día 4ms
+ ✓ tests/fechas.test.ts > isoLocal > rellena con ceros los meses, días y horas de una cifra 0ms
+ ✓ tests/fechas.test.ts > isoLocal > claveDia y paraInput recortan lo que corresponde 0ms
+ ✓ tests/fechas.test.ts > formatos en español dominicano > la fecha corta es dd/mm/aaaa 2ms
+ ✓ tests/fechas.test.ts > formatos en español dominicano > la fecha larga empieza en mayúscula y va en español 1ms
+ ✓ tests/fechas.test.ts > formatos en español dominicano > la hora va en español, con a. m. y p. m. 1ms
+ ✓ tests/fechas.test.ts > sumarDias > cruza el cambio de mes correctamente 0ms
+ ✓ tests/fechas.test.ts > edad > devuelve null si no hay fecha o si no es válida 0ms
+ ✓ tests/fechas.test.ts > edad > calcula años cumplidos 0ms
+ ✓ tests/fechas.test.ts > citaComoICS > produce un iCalendar con la estructura mínima que exige el estándar 2ms
+ ✓ tests/fechas.test.ts > citaComoICS > escapa las comas, que en iCalendar separan valores 0ms
+ ✓ tests/adherencia.test.ts > calcularAdherencia > cuenta tomadas sobre programadas 4ms
+ ✓ tests/adherencia.test.ts > calcularAdherencia > NO cuenta las dosis futuras del día en curso 0ms
+ ✓ tests/adherencia.test.ts > calcularAdherencia > una dosis pasada sin marcar sí cuenta en el denominador 0ms
+ ✓ tests/adherencia.test.ts > calcularAdherencia > sin dosis programadas devuelve null, no 0 % 1ms
+ ✓ tests/adherencia.test.ts > calcularAdherencia > ignora lo que cae fuera del período 0ms
+ ✓ tests/adherencia.test.ts > sincronizarDosis > crea las dosis que faltan sin pisar las ya marcadas 19ms
+ ✓ tests/adherencia.test.ts > sincronizarDosis > no crea dosis anteriores a la fecha en que se agregó el medicamento 1ms
+ ✓ tests/adherencia.test.ts > sincronizarDosis > no programa nada para un medicamento desactivado 1ms
+ ✓ tests/adherencia.test.ts > cinta del día > ordena las marcas por hora y detecta las vencidas 2ms
+ ✓ tests/adherencia.test.ts > utilidades > dosisProgramadasDelDia arma una entrada por horario 1ms
+ ✓ tests/adherencia.test.ts > utilidades > fechaHoraDosis compone la fecha ISO local del día y la hora 0ms
+stderr | tests/integracion/supabase.test.ts
+GoTrueClient@sb-vugtvzsazgmfsolugltk-auth-token:1 (2.118.0) 2026-11-03T03:30:55.864Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+GoTrueClient@sb-vugtvzsazgmfsolugltk-auth-token:2 (2.118.0) 2026-11-03T03:30:55.866Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > guarda el caso de demostración completo y lo devuelve idéntico
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > manda solo las diferencias y el servidor queda igual que la app
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > repetir un envío no duplica nada (idempotente)
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > RLS: otro usuario no puede ver, cambiar ni borrar los datos ajenos
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > sin sesión no se lee nada ni se puede eliminar una cuenta
+ ↓ tests/integracion/supabase.test.ts > Supabase · base de datos real > «Borrar todos mis datos» vacía la cuenta pero conserva las preferencias
+ ✓ tests/sincronizacion.test.tsx > arranque > trae lo del servidor, lo usa como base y queda al día 85ms
+stderr | tests/storage.test.ts > cargar / guardar > con un JSON corrupto no revienta: arranca limpio y conserva la copia rota
+Pulso: no se pudo leer el almacenamiento, se empieza limpio. SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+    at JSON.parse (<anonymous>)
+    at cargar (C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/src/lib/storage.ts:77:28)
+    at C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/tests/storage.test.ts:27:12
+    at file:///C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///C:/Users/jezel/OneDrive/Documents/tareas/P2-Eduandy/pulso/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+
+ ✓ tests/storage.test.ts > cargar / guardar > sin nada guardado devuelve el estado inicial 4ms
+ ✓ tests/storage.test.ts > cargar / guardar > lo que se guarda es lo que se lee 1ms
+ ✓ tests/storage.test.ts > cargar / guardar > con un JSON corrupto no revienta: arranca limpio y conserva la copia rota 5ms
+ ✓ tests/storage.test.ts > cargar / guardar > borrarTodo deja el almacenamiento sin la clave de Pulso 0ms
+ ✓ tests/storage.test.ts > normalizar > rellena lo que falte en un estado a medias 0ms
+ ✓ tests/storage.test.ts > normalizar > con basura devuelve el estado inicial 0ms
+ ✓ tests/storage.test.ts > nuevoId > no repite identificadores 1ms
+ ✓ tests/storage.test.ts > reducer > eliminar un medicamento se lleva también sus registros de dosis 16ms
+ ✓ tests/storage.test.ts > reducer > borrar todo conserva las preferencias de accesibilidad 0ms
+ ✓ tests/storage.test.ts > reducer > marcar una dosis deja constancia de cuándo se registró 2ms
+ ✓ tests/storage.test.ts > datos de demostración > genera un caso completo y rotulado como ficticio 2ms
+ ✓ tests/storage.test.ts > datos de demostración > es determinista: dos generaciones del mismo día dan lo mismo 3ms
+ ✓ tests/remoto.test.ts > aFilas / desdeFilas > el caso de demostración va y vuelve sin perder nada 8ms
+ ✓ tests/remoto.test.ts > aFilas / desdeFilas > todas las filas llevan el id del usuario dueño 2ms
+ ✓ tests/remoto.test.ts > aFilas / desdeFilas > lee las horas como las devuelve Postgres (hh:mm:ss) y las deja en hh:mm 2ms
+ ✓ tests/remoto.test.ts > aFilas / desdeFilas > una hora repetida no genera dos filas (violaría la clave primaria) 1ms
+ ✓ tests/remoto.test.ts > aFilas / desdeFilas > sin perfil no hay filas de perfil, rangos ni condiciones 0ms
+ ✓ tests/remoto.test.ts > aFilas / desdeFilas > un rango a medias vuelve como "sin rango", no como un rango inventado 2ms
+ ✓ tests/remoto.test.ts > igual > no le importa el orden de las claves 0ms
+ ✓ tests/remoto.test.ts > igual > ignora propiedades undefined, igual que JSON 0ms
+ ✓ tests/remoto.test.ts > igual > sí distingue valores distintos 0ms
+ ✓ tests/remoto.test.ts > calcularCambios > sin base conocida sube todo y no borra nada 2ms
+ ✓ tests/remoto.test.ts > calcularCambios > si nada cambió no hay nada que mandar 4ms
+ ✓ tests/remoto.test.ts > calcularCambios > marcar una dosis manda solo esa dosis 4ms
+ ✓ tests/remoto.test.ts > calcularCambios > eliminar un medicamento lo borra junto con sus dosis 3ms
+ ✓ tests/remoto.test.ts > calcularCambios > cambiar el perfil o los rangos marca el perfil para guardar 5ms
+ ✓ tests/remoto.test.ts > calcularCambios > borrar todo borra el perfil pero no toca las preferencias 0ms
+ ✓ tests/remoto.test.ts > calcularCambios > sin base y sin perfil no se borra el perfil del servidor 0ms
+ ✓ tests/remoto.test.ts > calcularCambios > deshacer (volver al estado anterior) revierte exactamente lo hecho 3ms
+ ✓ tests/sincronizacion.test.tsx > arranque > primera vez en el dispositivo y sin internet: no muestra una app vacía 55ms
+ ✓ tests/sincronizacion.test.tsx > arranque > con cambios pendientes, los sube ANTES de traer lo del servidor 61ms
+ ✓ tests/sincronizacion.test.tsx > arranque > con cambios pendientes y sin internet, NO trae lo del servidor (lo pisaría) 60ms
+ ✓ tests/sincronizacion.test.tsx > después de abrir > un cambio se envía solo, y solo la diferencia 479ms
+ ✓ tests/sincronizacion.test.tsx > después de abrir > un cambio que llega durante un envío se manda después, sin perderse 1075ms
+ ✓ tests/sincronizacion.test.tsx > después de abrir > si el servidor rechaza un cambio, avisa con el detalle y no avanza la base 509ms
+ ✓ tests/sincronizacion.test.tsx > después de abrir > enviarAhora devuelve false si no se pudo subir (para avisar antes de cerrar sesión) 57ms
+
+ Test Files  6 passed | 1 skipped (7)
+      Tests  69 passed | 6 skipped (75)
+   Start at  23:30:41
+   Duration  16.55s (transform 1.60s, setup 9.96s, import 42.91s, tests 2.52s, environment 34.43s)
+
