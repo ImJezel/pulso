@@ -1,228 +1,341 @@
 # Pulso
 
-### Control de tratamiento para personas con condiciones crónicas
+### Tu libreta de salud, siempre contigo
 
-**Proyecto final · Renglón Salud**
-Instituto Tecnológico de Las Américas (ITLA) · Sección 2026-C-2
-Asignatura: Diseño Centrado en el usuario · Facilitador: Juan Martínez López
-Rebeca Mary Astacio Bryan — 2025-2264
+Aplicación web progresiva (PWA) para personas con **hipertensión y diabetes tipo 2**: recuerda las dosis y registra cuáles se tomaron, guarda la presión, la glucosa y el peso comparándolos con el rango que definió el médico, y genera un informe imprimible para llevar a la consulta.
 
----
+**Instituto Tecnológico de Las Américas (ITLA)** · Interacción Humano-Computadora · Sección 2026-C-2
+Facilitadora: Eduandy Isabel Cruz Abreu
 
-## Qué es
+| Integrante | Matrícula |
+|---|---|
+| Jezel Pujols | 2025-2067 |
+| Rebeca Mary Astacio Bryan | 2025-2264 |
 
-En República Dominicana, quien tiene hipertensión o diabetes lleva su tratamiento en una libreta de papel y se la muestra al médico cada tres meses. Esa libreta se pierde, se moja y —lo más importante— **solo anota lo que pasó, nunca lo que no pasó**: nadie apunta las dosis que se olvidaron.
-
-**Pulso** reemplaza esa libreta y hace tres cosas:
-
-1. **Recuerda las dosis** y registra cuáles se tomaron y cuáles no.
-2. **Guarda presión, glucosa y peso**, indicando si el valor está dentro del rango **que definió el médico**.
-3. **Genera un informe imprimible** en A4 para llevar a la consulta.
-
-**Lo que no hace:** no diagnostica, no receta, no ajusta tratamientos y nunca sugiere rangos clínicos por su cuenta. No tiene servidor ni cuentas de usuario: los datos se quedan en el dispositivo.
+> **Aviso de salud.** Pulso es un prototipo académico. **No diagnostica, no prescribe y no ajusta tratamientos.** Los datos de demostración («María Fernández») son ficticios.
 
 ---
 
-## Cómo ejecutarlo
+## Contenido
 
-**Sin instalar nada:** doble clic en **`Pulso-app.html`**, en la raíz de esta carpeta. Es la aplicación completa en un solo archivo; no necesita servidor ni conexión.
+1. [Módulos que funcionan](#módulos-que-funcionan)
+2. [Instalación y ejecución](#instalación-y-ejecución)
+3. [Arquitectura](#arquitectura)
+4. [Estructura del proyecto](#estructura-del-proyecto)
+5. [Base de datos (Supabase)](#base-de-datos-supabase)
+6. [Sincronización y modo sin conexión](#sincronización-y-modo-sin-conexión)
+7. [Pruebas](#pruebas)
+8. [Comandos](#comandos)
+9. [Stack](#stack)
 
-**Para trabajar sobre el código** hace falta Node.js 20 o superior:
+---
+
+## Módulos que funcionan
+
+Todos guardan en la base de datos de Supabase, y cada usuario solo ve sus propios datos.
+
+| Módulo | Qué hace | Pantallas | Tablas |
+|---|---|---|---|
+| **1. Usuarios y sesión** | Crear cuenta e iniciar sesión con correo y contraseña, cerrar sesión, cambiar la contraseña y eliminar la cuenta con todos sus datos | `/entrar`, `/ajustes` | `auth.users` (Supabase Auth) |
+| **2. Perfil** | Configuración inicial en 3 pasos: nombre, condiciones, contacto de emergencia y rangos objetivo que define el médico | `/bienvenida`, `/ajustes` | `perfil`, `condicion`, `rangos_objetivo`, `preferencias` |
+| **3. Medicamentos y dosis** | Alta, edición, desactivación y borrado de medicamentos con sus horarios; marcar cada dosis como tomada u omitida con «Deshacer»; cinta del día y adherencia | `/`, `/medicamentos` | `medicamento`, `horario`, `registro_dosis` |
+| **4. Mediciones** | Registrar presión, glucosa y peso en 3 toques; clasificación contra el rango del médico; historial con tendencias | `/registrar`, `/historial` | `medicion` |
+| **5. Citas e informe** | Citas médicas con exportación al calendario (.ics) e informe A4 para el médico | `/citas`, `/informe` | `cita` |
+
+---
+
+## Instalación y ejecución
+
+### Requisitos
+
+- **Node.js 20 o superior** (probado con Node 24) y npm.
+- Una cuenta gratuita de **[Supabase](https://supabase.com)** para la base de datos. La CLI de Supabase viene incluida en el proyecto como dependencia de desarrollo (`npx supabase`), no hace falta instalarla aparte.
+
+### 1. Clonar e instalar
 
 ```bash
+git clone https://github.com/ImJezel/pulso.git
+cd pulso
 npm install
+```
+
+### 2. Crear la base de datos
+
+1. Crea un proyecto en [supabase.com/dashboard](https://supabase.com/dashboard) y guarda la contraseña de la base de datos.
+2. Copia el archivo de ejemplo de variables de entorno:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. En Supabase, abre **Project Settings → API** y copia en `.env.local` la **Project URL** (`VITE_SUPABASE_URL`) y la clave **publishable** o **anon** (`VITE_SUPABASE_ANON_KEY`). Esa clave es pública por diseño: lo que protege los datos es Row Level Security.
+4. Aplica el esquema y la configuración de autenticación con la CLI:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref TU_PROJECT_REF
+   npx supabase db push
+   npx supabase config push
+   ```
+
+   `db push` crea las 9 tablas, las políticas de seguridad y la función para eliminar la cuenta (`supabase/migrations/`). `config push` desactiva la confirmación por correo y pide contraseñas de 8 caracteres o más (`supabase/config.toml`).
+
+> **Sin la CLI:** pega el contenido de `supabase/migrations/20261027010000_esquema_inicial.sql` en el **SQL Editor** de Supabase y ejecútalo. Luego, en **Authentication → Sign In / Providers → Email**, desactiva **Confirm email**.
+
+### 3. Ejecutar
+
+```bash
 npm run dev
 ```
 
-Se abre en `http://localhost:5173`. Para verlo con datos: **Ajustes → Cargar datos de ejemplo**.
+Se abre en `http://localhost:5173`. Crea una cuenta, completa los 3 pasos de bienvenida y, si quieres ver la app llena, ve a **Ajustes → Cargar datos de ejemplo**.
 
-Para generar la versión de producción:
+### Versión de producción
 
 ```bash
-npm run build        # PWA instalable, en dist/
-npm run build:unico  # un solo archivo que abre con doble clic, en dist-unico/
+npm run build     # PWA instalable, en dist/
+npm run preview   # la sirve en http://localhost:4173
 ```
+
+### Sin base de datos
+
+Si `.env.local` no existe o sus variables están vacías, Pulso funciona en **modo local**: sin cuentas y con los datos solo en el navegador, como el prototipo original. `npm run dev:local` fuerza ese modo aunque haya variables, y es el que usan las herramientas de evidencia (`recorrido`, `axe`, `capturas`).
 
 ---
 
-## Estructura
+## Arquitectura
+
+**Monolito del lado del cliente organizado en capas**, con Supabase como backend gestionado (Postgres + Auth). Cada capa solo conoce a la de abajo:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ 1. Presentación        src/pages · src/components                    │
+│    React + react-router-dom · Tailwind con tokens · lucide · Recharts│
+├──────────────────────────────────────────────────────────────────────┤
+│ 2. Estado y sesión     src/context                                   │
+│    AppContext (useReducer, Deshacer) · SesionContext (Supabase Auth) │
+│    useSincronizacion (cola offline-first hacia la base de datos)     │
+├──────────────────────────────────────────────────────────────────────┤
+│ 3. Dominio             src/lib — funciones puras, probadas sin red   │
+│    rangos · adherencia · fechas · ics · demo                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ 4. Datos               src/lib/storage.ts  → localStorage (copia)    │
+│                        src/lib/remoto.ts   → Supabase (9 tablas)     │
+└──────────────────────────────────────────────────────────────────────┘
+                    │ HTTPS (supabase-js, clave pública + JWT del usuario)
+                    ▼
+        Supabase: Postgres con Row Level Security · Auth
+```
+
+Las pantallas **no saben que existe una base de datos**: siguen trabajando con un solo objeto `EstadoPulso`. Por eso añadir Supabase no obligó a tocar ninguna pantalla de datos (Hoy, Registrar, Medicamentos, Historial, Citas, Informe).
+
+---
+
+## Estructura del proyecto
 
 ```
 pulso/
-├── Pulso-app.html           ← la app compilada, abre con doble clic
 ├── index.html
 ├── package.json
-├── project.config.json      ← datos institucionales, en un solo sitio
-├── vite.config.ts
+├── project.config.json        ← datos institucionales en un solo sitio
+├── vite.config.ts             ← build de la PWA y de un solo archivo
+├── .env.example               ← plantilla de variables de entorno
 │
-├── public/                  ← íconos de la PWA y manifiesto
+├── supabase/
+│   ├── config.toml            ← configuración de Auth (sin confirmación, contraseña ≥ 8)
+│   └── migrations/            ← el esquema de la base de datos, en SQL
 │
 ├── src/
-│   ├── main.tsx             ← punto de entrada
-│   ├── App.tsx              ← rutas y esqueleto de la página
-│   ├── types/index.ts       ← el modelo de datos completo
-│   ├── lib/                 ← lógica pura, sin React, probada aparte
-│   ├── context/             ← estado global
-│   ├── components/          ← 10 componentes reutilizables
-│   ├── pages/               ← una por pantalla
-│   ├── styles/tokens.css    ← el sistema de diseño entero
-│   └── index.css            ← base, utilidades y hoja de impresión
+│   ├── main.tsx               ← punto de entrada y registro del service worker
+│   ├── App.tsx                ← sesión → datos del usuario → rutas
+│   ├── types/
+│   │   ├── index.ts           ← el modelo de datos de la app
+│   │   └── supabase.ts        ← tipos generados del esquema (npm run db:tipos)
+│   ├── context/
+│   │   ├── AppContext.tsx     ← estado global, Deshacer, anuncios accesibles
+│   │   ├── SesionContext.tsx  ← crear cuenta, entrar, salir, eliminar cuenta
+│   │   └── useSincronizacion.ts ← envío de cambios y modo sin conexión
+│   ├── lib/
+│   │   ├── supabase.ts        ← cliente de Supabase
+│   │   ├── remoto.ts          ← estado ⇄ tablas, cálculo de cambios, consultas
+│   │   ├── storage.ts         ← copia local por usuario
+│   │   ├── rangos.ts          ← clasificación contra los rangos del médico
+│   │   ├── adherencia.ts      ← dosis del día, cinta y % de cumplimiento
+│   │   ├── fechas.ts · ics.ts · demo.ts · calidadISO.ts
+│   ├── components/            ← 10 componentes accesibles reutilizables
+│   ├── pages/                 ← una por pantalla (10)
+│   └── styles/tokens.css      ← el sistema de diseño
 │
-├── tests/                   ← 44 pruebas unitarias
-├── scripts/                 ← herramientas de evidencia y documentos
-│
-└── docs/
-    ├── 00-guia-del-proyecto.md      ← glosario, decisiones y 30 preguntas
-    ├── 01-investigacion.md          ← problema, personas y referentes
-    ├── 02-evaluacion-heuristica.md  ← las 10 heurísticas de Nielsen
-    ├── 03-reporte-usabilidad.md     ← test con usuarios y escala SUS
-    ├── 04-iso-25010.md              ← 40 ítems de calidad del producto
-    ├── 05-guion-demo.md             ← guion de la demostración en vivo
-    ├── 06-guion-video.md            ← guion del video
-    ├── print/                       ← los tres documentos en HTML A4
-    └── evidencias/                  ← capturas, auditorías y verificación
+├── tests/                     ← pruebas unitarias (sin red)
+│   └── integracion/           ← pruebas contra la base de datos real
+└── scripts/                   ← recorrido de usuario, auditoría axe y capturas
 ```
-
----
-
-## Mapa del código
-
-### Lógica — sin React, probada por separado
-
-| Archivo | Qué hace |
-|---|---|
-| `src/types/index.ts` | Define el modelo de datos: perfil, medicamentos, dosis, mediciones, citas y preferencias |
-| `src/lib/rangos.ts` | Clasifica una medición contra los rangos del médico. **Si no hay rangos, devuelve `sin-referencia` y la interfaz no colorea nada** |
-| `src/lib/adherencia.ts` | Calcula el porcentaje de cumplimiento y arma la cinta del día. Las dosis futuras del día no entran en el denominador |
-| `src/lib/storage.ts` | Única puerta a `localStorage`. Aísla la persistencia y atrapa JSON corrupto o almacenamiento lleno |
-| `src/lib/fechas.ts` | Formatea fechas y horas en español dominicano. Guarda ISO local sin zona horaria |
-| `src/lib/demo.ts` | Genera 45 días de datos ficticios con semilla fija, para que la demostración sea reproducible |
-| `src/lib/ics.ts` | Exporta una cita al calendario del teléfono en formato iCalendar |
-| `src/lib/calidadISO.ts` | Los 40 ítems del cuestionario ISO 25010 y sus puntuaciones |
-
-### Estado e interfaz
-
-| Archivo | Qué hace |
-|---|---|
-| `src/context/AppContext.tsx` | Estado global con `useReducer`, persistencia, «Deshacer» y anuncios para lectores de pantalla |
-| `src/styles/tokens.css` | Colores, tipografías, medidas y los dos modos de accesibilidad |
-| `src/index.css` | Estilos base, foco visible y la hoja de impresión del informe |
-| `src/components/Boton.tsx` | Garantiza área táctil mínima de 48 px y que todo botón sea un `<button>` real |
-| `src/components/CintaDelDia.tsx` | La franja de 24 horas con una marca por dosis |
-| `src/components/Campos.tsx` | Campos de formulario con `<label>`, errores accesibles y teclado numérico |
-| `src/components/GraficoTendencia.tsx` | Gráfico con la banda del rango objetivo y tabla equivalente para lectores de pantalla |
-| `src/components/Panel.tsx` | Paneles y confirmaciones sobre el `<dialog>` nativo del navegador |
-| `src/components/Navegacion.tsx` | Barra inferior de 4 destinos y cabecera, siempre con ícono **y** texto |
 
 ### Pantallas
 
 | Ruta | Archivo | Qué resuelve |
 |---|---|---|
+| `/entrar` | `pages/Entrar.tsx` | Iniciar sesión o crear una cuenta |
 | `/bienvenida` | `pages/Bienvenida.tsx` | Configuración inicial en 3 pasos |
-| `/` | `pages/Hoy.tsx` | Qué toca ahora, última medición y próxima cita |
+| `/` | `pages/Hoy.tsx` | Qué toca ahora, cinta del día, última medición y próxima cita |
 | `/registrar` | `pages/Registrar.tsx` | Registrar una medición en 3 toques |
 | `/medicamentos` | `pages/Medicamentos.tsx` | Alta, edición, desactivación y borrado |
 | `/historial` | `pages/Historial.tsx` | Tendencias, resumen del período y tabla |
 | `/citas` | `pages/Citas.tsx` | Próximas y pasadas, con exportación a calendario |
 | `/informe` | `pages/Informe.tsx` | El documento A4 para el médico |
-| `/ajustes` | `pages/Ajustes.tsx` | Accesibilidad, perfil, datos y aviso de alcance |
+| `/ajustes` | `pages/Ajustes.tsx` | Accesibilidad, perfil, cuenta, datos y aviso de alcance |
 | `/calidad` | `pages/Calidad.tsx` | Radar de calidad ISO 25010 |
 
 ---
 
-## Stack y por qué
+## Base de datos (Supabase)
 
-| Herramienta | Versión | Por qué |
-|---|---|---|
-| **React + TypeScript** | 19.2 / 6.0 | Nueve pantallas comparten un mismo estado. TypeScript documenta el modelo y evita errores de tipo en registros clínicos |
-| **Vite** | 8.2 | Arranca en segundos y el build es estático |
-| **Tailwind CSS** | 4.3 | Los tokens obligan a consistencia, y el modo alto contraste se implementa cambiando variables CSS |
-| **React Context + `useReducer`** | — | Un solo objeto de estado y ninguna petición de red: Redux sería sobreingeniería |
-| **`localStorage`** vía `storage.ts` | — | Sin backend, funciona sin conexión, y la capa aislada permite migrar sin tocar la interfaz |
-| **Recharts** | 3.10 | Gráficos accesibles y responsive con poco código |
-| **date-fns** | 4.4 | Fechas en español dominicano sin arrastrar librerías pesadas |
-| **lucide-react** | 1.33 | Íconos SVG con licencia abierta |
-| **react-router-dom** | 7.18 | Navegación con URLs reales, no pestañas simuladas |
-| **vite-plugin-pwa** | 1.3 | Instalable y funcional sin conexión |
-| **Vitest** | 4.1 | 44 pruebas de la lógica crítica |
+El esquema completo está en [`supabase/migrations/20261027010000_esquema_inicial.sql`](supabase/migrations/20261027010000_esquema_inicial.sql) y traduce el modelo relacional del Entregable 2.
 
-**Sin backend, sin base de datos, sin variables de entorno secretas.**
+```mermaid
+erDiagram
+    USUARIO ||--o| PERFIL : tiene
+    USUARIO ||--o| PREFERENCIAS : configura
+    PERFIL ||--o| RANGOS_OBJETIVO : define
+    PERFIL ||--o{ CONDICION : padece
+    PERFIL ||--o{ MEDICAMENTO : toma
+    MEDICAMENTO ||--o{ HORARIO : "se programa"
+    MEDICAMENTO ||--o{ REGISTRO_DOSIS : genera
+    PERFIL ||--o{ MEDICION : registra
+    PERFIL ||--o{ CITA : agenda
+
+    PERFIL {
+        uuid id_perfil PK "= auth.uid()"
+        text nombre
+        date fecha_nacimiento
+        text contacto_nombre
+        text contacto_telefono
+        boolean datos_demo
+    }
+    MEDICAMENTO {
+        uuid id_perfil PK
+        text id_medicamento PK
+        text nombre
+        text dosis
+        text instruccion
+        boolean activo
+        timestamp creado_en
+    }
+    HORARIO {
+        uuid id_perfil PK
+        text id_medicamento PK
+        time hora PK
+        integer orden
+    }
+    REGISTRO_DOSIS {
+        uuid id_perfil PK
+        text id_registro PK
+        text id_medicamento FK
+        timestamp fecha_hora_programada
+        text estado "pendiente | tomada | omitida"
+        timestamp registrado_en
+    }
+    MEDICION {
+        uuid id_perfil PK
+        text id_medicion PK
+        text tipo "presion | glucosa | peso"
+        timestamp fecha_hora
+        numeric sistolica
+        numeric diastolica
+        numeric pulso
+        numeric glucosa
+        text contexto
+        numeric peso
+        text nota
+    }
+    CITA {
+        uuid id_perfil PK
+        text id_cita PK
+        text medico
+        text especialidad
+        timestamp fecha_hora
+        text lugar
+        text motivo
+    }
+```
+
+| Decisión | Por qué |
+|---|---|
+| **Row Level Security en las 9 tablas** | Una política por tabla: una fila se puede leer o escribir solo si `id_perfil = auth.uid()`. Aunque alguien modifique el código del navegador, Postgres no le deja tocar los datos de otro paciente. El rol anónimo no tiene ningún permiso. |
+| **Claves primarias compuestas `(id_perfil, id)`** | Los identificadores los genera la app en el dispositivo (así funciona sin conexión); con el usuario en la clave nunca chocan entre cuentas. Las claves foráneas también incluyen `id_perfil`, así que nadie puede colgar una dosis de un medicamento ajeno. |
+| **`timestamp` sin zona horaria** | Igual que la app: una medición de las 8:00 a. m. no se mueve de día al cambiar de zona horaria. |
+| **`ON DELETE CASCADE`** | Borrar un medicamento borra sus horarios y dosis; eliminar la cuenta borra todo. |
+| **`eliminar_mi_cuenta()`** | Función `SECURITY DEFINER` que solo puede borrar al usuario que la llama. El navegador nunca tiene la clave de servicio. |
+
+Si cambias el esquema, crea una migración nueva en `supabase/migrations/`, aplícala con `npm run db:push` y regenera los tipos con `npm run db:tipos`.
 
 ---
 
-## Sistema de diseño
+## Sincronización y modo sin conexión
 
-Todo vive en `src/styles/tokens.css`. Ningún componente escribe un color a mano, y por eso el modo alto contraste no reescribe ni una regla de estilo: solo cambia el valor de las variables.
+Pulso se abre varias veces al día, muchas veces sin buena señal. Por eso la base de datos no está en el camino de cada toque:
 
-| Token | Color | Contraste sobre blanco | Uso |
-|---|---|:---:|---|
-| `--pulso-tinta` | `#14312B` | 12.6:1 | Texto principal, barra superior |
-| `--pulso-salvia` | `#4E8C7A` | 3.9:1 | Rellenos, líneas de gráfico |
-| `--pulso-salvia-fuerte` | `#3A6B5C` | **6.1:1** | Acción primaria y texto verde |
-| `--pulso-lino` | `#F6F3EC` | — | Fondo de la aplicación |
-| `--pulso-ambar` | `#C87A2C` | 3.4:1 | Marcas y fondos de atención |
-| `--pulso-ambar-texto` | `#8A5316` | **6.3:1** | Texto de atención |
-| `--pulso-ladrillo` | `#A33B2A` | 6.5:1 | Alerta seria, uso escaso |
-| `--pulso-bruma-texto` | `#5C6B66` | **5.6:1** | Texto secundario |
+1. Cada cambio se aplica al instante en pantalla y se guarda en una **copia local del usuario** (`localStorage`, una clave por cuenta).
+2. `useSincronizacion` guarda **lo último que el servidor confirmó** y, 400 ms después de cada cambio, envía **solo la diferencia** (`calcularCambios` en `remoto.ts`).
+3. **Sin internet** no se pierde nada: la base confirmada no avanza, así que el siguiente intento incluye todo lo pendiente. Se reintenta al volver la conexión y cada 30 segundos, y la app lo dice con calma («Sin conexión. Lo que registres se guarda en este dispositivo…»).
+4. **Al abrir**, primero se sube lo pendiente y después se trae lo del servidor. En el orden contrario, lo del servidor pisaría lo que se hizo sin conexión.
+5. **Al cerrar sesión** se intenta subir lo pendiente; si no se puede, la app avisa antes de borrar la copia local.
 
-> Los tres colores de marca que no llegan a 4.5:1 se conservan para rellenos y gráficos, y tienen una versión oscurecida para texto. Así se cumple WCAG 2.1 AA sin perder la paleta.
+---
 
-**Tipografía:** Fraunces para títulos, Public Sans para interfaz, IBM Plex Mono para cifras clínicas. Escala base de **17 px**, ampliable al 115 % y al 135 % desde Ajustes.
+## Pruebas
+
+```bash
+npm test                    # 69 pruebas unitarias, sin red
+npm run test:integracion    # 6 pruebas contra la base de datos real
+```
+
+| Archivo | Qué comprueba |
+|---|---|
+| `tests/rangos.test.ts` | Clasificación de mediciones; sin rangos no se colorea nada |
+| `tests/adherencia.test.ts` | Porcentaje de cumplimiento y dosis del día |
+| `tests/fechas.test.ts` | Formatos en español dominicano y cálculo de edad |
+| `tests/storage.test.ts` | JSON corrupto, estado viejo, reducer |
+| `tests/remoto.test.ts` | Estado ⇄ filas sin pérdida y cálculo exacto de cambios |
+| `tests/sincronizacion.test.tsx` | Orden de operaciones: subir antes de traer, no pisar cambios sin conexión, cambios durante un envío |
+| `tests/integracion/supabase.test.ts` | Contra Supabase real: guarda y devuelve el caso completo, envía solo diferencias, es idempotente y **RLS impide que un usuario vea, cambie o borre datos de otro** |
+
+Las pruebas de integración crean dos usuarios de prueba y los eliminan al terminar. Necesitan `.env.local` configurado y la confirmación por correo desactivada.
 
 ---
 
 ## Comandos
 
-```bash
-npm run dev          # servidor de desarrollo
-npm run build        # build de producción (PWA)
-npm run build:unico  # build de un solo archivo, abre con doble clic
-npm run preview      # sirve el build para probar la PWA
-npm test             # 44 pruebas unitarias
-npm run lint         # análisis estático
-```
-
-Con el servidor de desarrollo corriendo, en otra terminal:
-
-```bash
-npm run recorrido    # recorre la app como un usuario nuevo, sin instrucciones
-npm run axe          # auditoría de accesibilidad de las 9 rutas en 3 modos
-npm run capturas     # regenera las evidencias de docs/evidencias/
-npm run documentos   # regenera los HTML A4 de docs/print/
-npm run verificar    # pruebas + build + accesibilidad + recorrido
-```
-
----
-
-## Resultados de la última verificación
-
-Detalle completo en [`docs/evidencias/verificacion.md`](docs/evidencias/verificacion.md).
-
-| | |
+| Comando | Qué hace |
 |---|---|
-| Pruebas unitarias | **44 / 44** |
-| Recorrido de un usuario nuevo | **12 / 12 pasos** |
-| Lighthouse (producción) | Accesibilidad **100** · Buenas prácticas **100** · SEO **100** · Rendimiento **91** |
-| axe-core | **0 violaciones** en 24 auditorías (9 rutas × 3 modos de accesibilidad) |
-| Consola del navegador | 0 errores, 0 advertencias en las 8 rutas |
-| Funcionamiento sin conexión | Service worker activo, la app carga |
+| `npm run dev` | Servidor de desarrollo con Supabase |
+| `npm run dev:local` | Servidor de desarrollo en modo local, sin cuentas |
+| `npm run build` | Build de producción (PWA) en `dist/` |
+| `npm run build:unico` | Un solo `index.html` que abre con doble clic, en modo local |
+| `npm run preview` | Sirve el build de producción |
+| `npm test` | Pruebas unitarias |
+| `npm run test:integracion` | Pruebas contra la base de datos real |
+| `npm run lint` | Análisis estático con oxlint |
+| `npm run db:push` | Aplica las migraciones al proyecto enlazado |
+| `npm run db:tipos` | Regenera `src/types/supabase.ts` desde el esquema |
+| `npm run recorrido` · `axe` · `capturas` | Con `npm run dev:local` corriendo: recorrido de un usuario nuevo, auditoría de accesibilidad y capturas |
 
 ---
 
-## Evaluación del proyecto
+## Stack
 
-| Documento | Qué contiene | Resultado |
-|---|---|---|
-| [`docs/02-evaluacion-heuristica.md`](docs/02-evaluacion-heuristica.md) | Inspección contra las 10 heurísticas de Nielsen y Molich | **15 hallazgos, 9 corregidos** |
-| [`docs/03-reporte-usabilidad.md`](docs/03-reporte-usabilidad.md) | Test moderado con 5 usuarios, métricas e instrumento completo | **SUS 79** (la industria está en 68) |
-| [`docs/04-iso-25010.md`](docs/04-iso-25010.md) | 40 ítems de calidad del producto, con evidencia por ítem | **Índice global 3.95 / 5** |
-
-Los tres están también en `docs/print/` como HTML A4, listos para **Ctrl + P → Guardar como PDF**.
+| Herramienta | Para qué |
+|---|---|
+| **React 19 + TypeScript** | Diez pantallas que comparten un mismo estado; TypeScript documenta el modelo y evita errores de tipo en registros clínicos |
+| **Vite** | Servidor de desarrollo y build estático |
+| **Supabase** (Postgres + Auth) | Base de datos con seguridad por fila y cuentas de usuario, sin mantener un servidor propio |
+| **@supabase/supabase-js** | Cliente tipado con los tipos generados del esquema |
+| **Tailwind CSS 4** | Estilos con tokens; el alto contraste solo cambia variables CSS |
+| **React Context + `useReducer`** | Un solo objeto de estado; Redux sería sobreingeniería |
+| **vite-plugin-pwa** | Instalable y funcional sin conexión |
+| **Recharts · date-fns · lucide-react · react-router-dom** | Gráficos accesibles, fechas en español, íconos y rutas |
+| **Vitest + Testing Library** | Pruebas unitarias, del motor de sincronización y de integración |
 
 ---
-
-## Licencia y aviso
 
 Proyecto académico sin fines comerciales, desarrollado para el Instituto Tecnológico de Las Américas (ITLA).
-
-**Aviso de salud.** Pulso es un prototipo académico. **No diagnostica, no prescribe y no ajusta tratamientos.** Todos los datos de demostración son ficticios. No debe usarse como sustituto de atención médica profesional.
