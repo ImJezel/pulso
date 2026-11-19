@@ -19,6 +19,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { HeartPulse, LogIn, UserPlus } from 'lucide-react'
 import { useSesion, LARGO_MINIMO_CONTRASENA } from '../context/SesionContext'
+import { validarCredenciales } from '../lib/validaciones'
 import Boton from '../components/Boton'
 import { Tarjeta } from '../components/Tarjeta'
 import { CampoTexto } from '../components/Campos'
@@ -48,15 +49,11 @@ export default function Entrar() {
   async function enviar(e: FormEvent) {
     e.preventDefault()
     const c = correo.trim()
-    const malCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)
-      ? null
-      : 'Escribe tu correo completo, por ejemplo maria@gmail.com.'
-    const malaContrasena =
-      contrasena.length === 0
-        ? 'Escribe tu contraseña.'
-        : creando && contrasena.length < LARGO_MINIMO_CONTRASENA
-          ? `Usa al menos ${LARGO_MINIMO_CONTRASENA} caracteres. Una frase corta se recuerda mejor que una palabra rara.`
-          : null
+    const { correo: malCorreo, contrasena: malaContrasena } = validarCredenciales(
+      c,
+      contrasena,
+      creando,
+    )
     setErrorCorreo(malCorreo)
     setErrorContrasena(malaContrasena)
     setError(null)

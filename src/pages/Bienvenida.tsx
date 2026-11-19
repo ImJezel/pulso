@@ -16,6 +16,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, HeartPulse } from 'lucide-react'
 import { usePulso } from '../context/AppContext'
+import {
+  validarContactoEmergencia,
+  validarFechaNacimiento,
+  validarNombrePerfil,
+  validarRangosObjetivo,
+} from '../lib/validaciones'
 import { CONDICIONES } from '../types'
 import type { Perfil, RangosObjetivo } from '../types'
 import Boton from '../components/Boton'
@@ -39,6 +45,9 @@ export default function Bienvenida() {
   const [nombre, setNombre] = useState('')
   const [nacimiento, setNacimiento] = useState('')
   const [errorNombre, setErrorNombre] = useState<string | null>(null)
+  const [errorNacimiento, setErrorNacimiento] = useState<string | null>(null)
+  const [errorContacto, setErrorContacto] = useState<string | null>(null)
+  const [errorRangos, setErrorRangos] = useState<string | null>(null)
   const [condiciones, setCondiciones] = useState<string[]>([])
   const [contactoNombre, setContactoNombre] = useState('')
   const [contactoTel, setContactoTel] = useState('')
@@ -55,8 +64,10 @@ export default function Bienvenida() {
     pesoMax: '',
   })
 
-  const campo = (k: keyof typeof r) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const campo = (k: keyof typeof r) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorRangos(null)
     setR((prev) => ({ ...prev, [k]: e.target.value }))
+  }
 
   function alternarCondicion(id: string) {
     setCondiciones((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
@@ -64,18 +75,35 @@ export default function Bienvenida() {
 
   function siguiente() {
     if (paso === 1) {
-      if (nombre.trim().length < 2) {
-        setErrorNombre('Escribe tu nombre para poder saludarte por él.')
-        return
-      }
-      setErrorNombre(null)
+      const errNom = validarNombrePerfil(nombre)
+      const errNac = validarFechaNacimiento(nacimiento)
+      setErrorNombre(errNom)
+      setErrorNacimiento(errNac)
+      if (errNom || errNac) return
+    }
+    if (paso === 2) {
+      const errCon = validarContactoEmergencia(contactoNombre, contactoTel)
+      setErrorContacto(errCon)
+      if (errCon) return
     }
     setPaso((p) => Math.min(p + 1, TOTAL_PASOS))
   }
 
-  function terminar() {
+  function terminar(sinRangos = false) {
+    if (!sinRangos) {
+      const errRan = validarRangosObjetivo(r)
+      setErrorRangos(errRan)
+      if (errRan) return
+    } else {
+      setErrorRangos(null)
+    }
+
     const presion =
-      num(r.sisMin) !== null && num(r.sisMax) !== null && num(r.diaMin) !== null && num(r.diaMax) !== null
+      !sinRangos &&
+      num(r.sisMin) !== null &&
+      num(r.sisMax) !== null &&
+      num(r.diaMin) !== null &&
+      num(r.diaMax) !== null
         ? {
             sisMin: num(r.sisMin)!,
             sisMax: num(r.sisMax)!,
@@ -85,7 +113,7 @@ export default function Bienvenida() {
         : null
 
     const glucosa =
-      num(r.ayunasMin) !== null && num(r.ayunasMax) !== null
+      !sinRangos && num(r.ayunasMin) !== null && num(r.ayunasMax) !== null
         ? {
             ayunasMin: num(r.ayunasMin)!,
             ayunasMax: num(r.ayunasMax)!,
@@ -95,7 +123,7 @@ export default function Bienvenida() {
         : null
 
     const peso =
-      num(r.pesoMin) !== null && num(r.pesoMax) !== null
+      !sinRangos && num(r.pesoMin) !== null && num(r.pesoMax) !== null
         ? { min: num(r.pesoMin)!, max: num(r.pesoMax)! }
         : null
 
@@ -167,7 +195,11 @@ export default function Bienvenida() {
               etiqueta="Fecha de nacimiento"
               type="date"
               value={nacimiento}
-              onChange={(e) => setNacimiento(e.target.value)}
+              onChange={(e) => {
+                setErrorNacimiento(null)
+                setNacimiento(e.target.value)
+              }}
+              error={errorNacimiento}
               ayuda="Aparece en el informe que le llevas a tu médico. Puedes dejarla en blanco."
             />
           </>
@@ -198,7 +230,10 @@ export default function Bienvenida() {
             <CampoTexto
               etiqueta="Nombre"
               value={contactoNombre}
-              onChange={(e) => setContactoNombre(e.target.value)}
+              onChange={(e) => {
+                setErrorContacto(null)
+                setContactoNombre(e.target.value)
+              }}
               placeholder="Yaneiris (hija)"
             />
             <CampoTexto
@@ -206,7 +241,11 @@ export default function Bienvenida() {
               type="tel"
               inputMode="tel"
               value={contactoTel}
-              onChange={(e) => setContactoTel(e.target.value)}
+              onChange={(e) => {
+                setErrorContacto(null)
+                setContactoTel(e.target.value)
+              }}
+              error={errorContacto}
               placeholder="809-000-0000"
             />
           </>
@@ -266,6 +305,15 @@ export default function Bienvenida() {
                 <CampoNumero etiqueta="Máximo" value={r.pesoMax} onChange={campo('pesoMax')} />
               </div>
             </fieldset>
+
+            {errorRangos && (
+              <p
+                role="alert"
+                className="mt-2 rounded-xl border-2 border-ambar-texto bg-ambar-suave px-3 py-2.5 font-semibold text-ambar-texto"
+              >
+                {errorRangos}
+              </p>
+            )}
           </>
         )}
       </Tarjeta>
@@ -292,7 +340,7 @@ export default function Bienvenida() {
           <Boton
             variante="primario"
             tamano="grande"
-            onClick={terminar}
+            onClick={() => terminar(false)}
             icono={<Check size={20} aria-hidden="true" />}
           >
             Empezar a usar Pulso
@@ -315,7 +363,7 @@ export default function Bienvenida() {
         <p className="mt-3 text-center">
           <button
             type="button"
-            onClick={terminar}
+            onClick={() => terminar(true)}
             className="min-h-[3rem] px-3 text-salvia-fuerte underline underline-offset-4"
           >
             No sé mis rangos, continuar sin ellos

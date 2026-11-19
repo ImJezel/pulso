@@ -19,8 +19,8 @@ import EstadoVacio from '../components/EstadoVacio'
 import Boton from '../components/Boton'
 import Panel, { Confirmacion } from '../components/Panel'
 import { CampoTexto } from '../components/Campos'
-import { horaTexto } from '../lib/fechas'
-import { isoLocal } from '../lib/fechas'
+import { horaTexto, isoLocal } from '../lib/fechas'
+import { validarMedicamento } from '../lib/validaciones'
 import type { Medicamento } from '../types'
 
 const HORARIOS_SUGERIDOS = ['06:00', '08:00', '12:00', '14:00', '18:00', '20:00', '22:00']
@@ -93,14 +93,12 @@ export default function Medicamentos() {
 
   function guardar() {
     if (!borrador) return
-    if (borrador.nombre.trim().length < 2) {
-      setError('Escribe el nombre del medicamento.')
+    const mensajeError = validarMedicamento(borrador)
+    if (mensajeError) {
+      setError(mensajeError)
       return
     }
-    if (borrador.horarios.length === 0) {
-      setError('Agrega al menos un horario. Sin horario, Pulso no puede recordarte la toma.')
-      return
-    }
+    setError(null)
 
     if (borrador.id) {
       const original = estado.medicamentos.find((m) => m.id === borrador.id)

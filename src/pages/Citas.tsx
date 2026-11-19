@@ -20,6 +20,7 @@ import Panel, { Confirmacion } from '../components/Panel'
 import { CampoTexto, CampoArea } from '../components/Campos'
 import { descargarICS } from '../lib/ics'
 import { fechaHoraCorta, paraInput, relativo } from '../lib/fechas'
+import { validarCita } from '../lib/validaciones'
 import type { Cita } from '../types'
 
 interface Borrador {
@@ -64,14 +65,12 @@ export default function Citas() {
 
   function guardar() {
     if (!borrador) return
-    if (!borrador.especialidad.trim() && !borrador.medico.trim()) {
-      setError('Escribe al menos la especialidad o el nombre del médico.')
+    const mensajeError = validarCita(borrador)
+    if (mensajeError) {
+      setError(mensajeError)
       return
     }
-    if (!borrador.fechaHora) {
-      setError('Falta la fecha y la hora de la cita.')
-      return
-    }
+    setError(null)
 
     const cita: Cita = {
       id: borrador.id ?? nuevoId('cita'),

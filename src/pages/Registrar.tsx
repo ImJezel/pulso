@@ -27,7 +27,8 @@ import {
   UNIDADES,
   valorPrincipal,
 } from '../lib/rangos'
-import { fechaHoraCorta, isoLocal, paraInput } from '../lib/fechas'
+import { avisoPlausible, validarMedicion } from '../lib/validaciones'
+import { fechaHoraCorta, paraInput } from '../lib/fechas'
 import type { ContextoGlucosa, Medicion, TipoMedicion } from '../types'
 
 const TIPOS: { id: TipoMedicion; etiqueta: string; Icono: typeof Activity }[] = [
@@ -35,21 +36,6 @@ const TIPOS: { id: TipoMedicion; etiqueta: string; Icono: typeof Activity }[] = 
   { id: 'glucosa', etiqueta: 'Glucosa', Icono: Droplet },
   { id: 'peso', etiqueta: 'Peso', Icono: Scale },
 ]
-
-/** Aviso suave cuando un número se sale de lo que un aparato suele medir. */
-function avisoPlausible(
-  valor: string,
-  limites: { min: number; max: number },
-  nombre: string,
-): string | null {
-  if (valor.trim() === '') return null
-  const n = Number(valor)
-  if (!Number.isFinite(n)) return 'Escribe solo números.'
-  if (n < limites.min || n > limites.max) {
-    return `${nombre} suele estar entre ${limites.min} y ${limites.max}. Revisa el número. Si es correcto, puedes guardarlo igual.`
-  }
-  return null
-}
 
 export default function Registrar() {
   const { estado, despacharConDeshacer, nuevoId } = usePulso()
@@ -79,39 +65,28 @@ export default function Registrar() {
   }
 
   function guardar() {
-    const fechaHora = cuando ? `${cuando}:00` : isoLocal(new Date())
-
-    let valores: Medicion['valores']
-    if (tipo === 'presion') {
-      if (!sistolica.trim() || !diastolica.trim()) {
-        setErrorGeneral('Para guardar una presión hacen falta los dos números: la alta y la baja.')
-        return
-      }
-      valores = {
-        sistolica: Number(sistolica),
-        diastolica: Number(diastolica),
-        ...(pulso.trim() ? { pulso: Number(pulso) } : {}),
-      }
-    } else if (tipo === 'glucosa') {
-      if (!glucosa.trim()) {
-        setErrorGeneral('Escribe el valor de la glucosa para poder guardarlo.')
-        return
-      }
-      valores = { glucosa: Number(glucosa), contexto }
-    } else {
-      if (!peso.trim()) {
-        setErrorGeneral('Escribe tu peso para poder guardarlo.')
-        return
-      }
-      valores = { peso: Number(peso) }
+    const validacion = validarMedicion({
+      tipo,
+      sistolica,
+      diastolica,
+      pulso,
+      glucosa,
+      contexto,
+      peso,
+      cuando,
+      nota,
+    })
+    if (!validacion.ok) {
+      setErrorGeneral(validacion.error)
+      return
     }
 
     const medicion: Medicion = {
       id: nuevoId('med'),
       tipo,
-      fechaHora,
-      valores,
-      nota: nota.trim(),
+      fechaHora: validacion.fechaHora,
+      valores: validacion.valores,
+      nota: validacion.nota,
     }
 
     const clasificacion = clasificar(medicion, estado.perfil?.rangosObjetivo)

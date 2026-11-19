@@ -32,6 +32,12 @@ import {
 import { usePulso } from '../context/AppContext'
 import { useSesion, LARGO_MINIMO_CONTRASENA } from '../context/SesionContext'
 import type { EstadoSync } from '../context/useSincronizacion'
+import {
+  validarContactoEmergencia,
+  validarFechaNacimiento,
+  validarNombrePerfil,
+  validarRangosObjetivo,
+} from '../lib/validaciones'
 import { Tarjeta, TituloSeccion } from '../components/Tarjeta'
 import Boton from '../components/Boton'
 import Panel, { Confirmacion } from '../components/Panel'
@@ -74,6 +80,7 @@ export default function Ajustes() {
   const perfil = estado.perfil
 
   const [editando, setEditando] = useState(false)
+  const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
   const [confirmarBorrado, setConfirmarBorrado] = useState(false)
   const [palabra, setPalabra] = useState('')
 
@@ -140,13 +147,25 @@ export default function Ajustes() {
     pesoMax: txt(perfil?.rangosObjetivo.peso?.max),
   }))
 
-  const campo = (k: keyof typeof borrador) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const campo = (k: keyof typeof borrador) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorPerfil(null)
     setBorrador((b) => ({ ...b, [k]: e.target.value }))
+  }
 
   function guardarPerfil() {
     const b = borrador
+    const err =
+      validarNombrePerfil(b.nombre) ??
+      validarFechaNacimiento(b.fechaNacimiento) ??
+      validarContactoEmergencia(b.contactoNombre, b.contactoTel) ??
+      validarRangosObjetivo(b)
+    if (err) {
+      setErrorPerfil(err)
+      return
+    }
+    setErrorPerfil(null)
     const nuevo: Perfil = {
-      nombre: b.nombre.trim() || 'Sin nombre',
+      nombre: b.nombre.trim(),
       fechaNacimiento: b.fechaNacimiento,
       condiciones: b.condiciones,
       contactoEmergencia:
@@ -271,7 +290,13 @@ export default function Ajustes() {
                   : 'Sin rangos objetivo: Pulso guarda tus mediciones pero no las clasifica.'}
               </p>
             </div>
-            <Boton onClick={() => setEditando(true)} icono={<User size={18} aria-hidden="true" />}>
+            <Boton
+              onClick={() => {
+                setErrorPerfil(null)
+                setEditando(true)
+              }}
+              icono={<User size={18} aria-hidden="true" />}
+            >
               Editar
             </Boton>
           </div>
@@ -552,6 +577,15 @@ export default function Ajustes() {
             <CampoNumero etiqueta="Máximo" value={borrador.pesoMax} onChange={campo('pesoMax')} />
           </div>
         </fieldset>
+
+        {errorPerfil && (
+          <p
+            role="alert"
+            className="mt-2 rounded-xl border-2 border-ambar-texto bg-ambar-suave px-3 py-2.5 font-semibold text-ambar-texto"
+          >
+            {errorPerfil}
+          </p>
+        )}
       </Panel>
 
       <Confirmacion
