@@ -108,6 +108,43 @@ export function useSincronizacion(
         return true
       } catch (e) {
         const red = e instanceof ErrorRemoto ? e.esRed : false
+        // INC-04: si otro dispositivo borró el medicamento o el perfil al que
+        // apuntan estas dosis (error Postgres 23503: foreign_key_violation),
+        // recargamos el estado remoto como nueva base y limpiamos las dosis
+        // huérfanas para que la cola no quede bloqueada.
+        const violacionFK =
+          e instanceof ErrorRemoto &&
+          !e.esRed &&
+          (e.codigo === '23503' || e.message.toLowerCase().includes('foreign key'))
+        if (violacionFK) {
+          try {
+            const remoto = await cargarRemoto(cliente, usuarioId)
+            if (!vivo.current) return false
+            const idsRemotos = new Set(remoto.medicamentos.map((m) => m.id))
+            const limpio: EstadoPulso = {
+              ...actual.current,
+              medicamentos: actual.current.medicamentos.filter((m) => idsRemotos.has(m.id)),
+              registrosDosis: actual.current.registrosDosis.filter((r) =>
+                idsRemotos.has(r.medicamentoId),
+              ),
+            }
+            confirmado.current = remoto
+            guardarConfirmado(usuarioId, remoto)
+            actual.current = limpio
+            reemplazar(limpio)
+            const restantes = calcularCambios(remoto, limpio)
+            if (hayCambios(restantes)) {
+              await aplicarCambios(cliente, usuarioId, limpio, restantes)
+              if (!vivo.current) return false
+              confirmado.current = limpio
+              guardarConfirmado(usuarioId, limpio)
+            }
+            if (arrancado.current) marcar('al-dia')
+            return true
+          } catch {
+            /* Si tampoco se puede recargar, cae al flujo normal de error abajo. */
+          }
+        }
         marcar(red ? 'pendiente' : 'error', red ? null : e instanceof Error ? e.message : String(e))
         return false
       } finally {
@@ -116,7 +153,7 @@ export function useSincronizacion(
     })()
     vuelo.current = tarea
     return tarea
-  }, [cliente, usuarioId, marcar])
+  }, [cliente, usuarioId, marcar, reemplazar])
 
   /* --- Arranque ------------------------------------------------------------ */
   const arrancar = useCallback(async () => {

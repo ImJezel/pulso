@@ -384,22 +384,24 @@ export function hayCambios(c: Cambios): boolean {
 /** esRed distingue "no hay internet" (se reintenta solo) de un rechazo real. */
 export class ErrorRemoto extends Error {
   readonly esRed: boolean
-  constructor(mensaje: string, esRed: boolean) {
+  readonly codigo: string | null
+  constructor(mensaje: string, esRed: boolean, codigo: string | null = null) {
     super(mensaje)
     this.name = 'ErrorRemoto'
     this.esRed = esRed
+    this.codigo = codigo
   }
 }
 
 interface Respuesta {
-  error: { message: string } | null
+  error: { message: string; code?: string } | null
   status: number
 }
 
 function revisar<R extends Respuesta>(r: R, que: string): R {
   if (r.error) {
     // postgrest-js devuelve status 0 cuando fetch ni siquiera llegó al servidor.
-    throw new ErrorRemoto(`${que}: ${r.error.message}`, r.status === 0)
+    throw new ErrorRemoto(`${que}: ${r.error.message}`, r.status === 0, r.error.code ?? null)
   }
   return r
 }
@@ -456,7 +458,27 @@ export async function aplicarCambios(
   }
 
   // 3. Lo que cuelga de un medicamento, después de que el medicamento exista.
-  for (const lote of lotes(cambios.registros.guardar, TAM_LOTE_FILAS)) {
+  //    Las dosis auto-generadas ('pendiente' sin marca de tiempo) van con
+  //    ignoreDuplicates para no sobrescribir una dosis que ya se marcó como
+  //    'tomada' u 'omitida' en otro dispositivo (INC-05).
+  const idsMedicamentos = new Set(estado.medicamentos.map((m) => m.id))
+  const registrosConPadre = cambios.registros.guardar.filter((r) => idsMedicamentos.has(r.medicamentoId))
+  const dosisAutomaticas = registrosConPadre.filter(
+    (r) => r.estado === 'pendiente' && r.registradoEn === null,
+  )
+  const dosisMarcadas = registrosConPadre.filter(
+    (r) => !(r.estado === 'pendiente' && r.registradoEn === null),
+  )
+
+  for (const lote of lotes(dosisAutomaticas, TAM_LOTE_FILAS)) {
+    revisar(
+      await db
+        .from('registro_dosis')
+        .upsert(lote.map((r) => filaRegistro(r, uid)), { ignoreDuplicates: true }),
+      'dosis',
+    )
+  }
+  for (const lote of lotes(dosisMarcadas, TAM_LOTE_FILAS)) {
     revisar(await db.from('registro_dosis').upsert(lote.map((r) => filaRegistro(r, uid))), 'dosis')
   }
   for (const lote of lotes(cambios.registros.borrar, TAM_LOTE_IDS)) {

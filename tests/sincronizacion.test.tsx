@@ -152,4 +152,34 @@ describe('después de abrir', () => {
     })
     expect(ok).toBe(false)
   })
+
+  it('INC-04: si el servidor rechaza por clave foránea (23503) porque el medicamento se borró en otro dispositivo, recarga lo remoto y descarta dosis huérfanas', async () => {
+    const { result, rerender, reemplazar } = montar(demo)
+    await waitFor(() => expect(result.current.estado).toBe('al-dia'))
+
+    const medBorradoId = demo.medicamentos[0].id
+    const remotoSinMed = reducer(demo, { tipo: 'ELIMINAR_MEDICAMENTO', id: medBorradoId })
+    cargarMock.mockResolvedValueOnce(remotoSinMed)
+
+    // El primer intento falla con 23503 (el medicamento ya no existe en el servidor)
+    enviarMock.mockRejectedValueOnce(
+      new ErrorRemoto('dosis: violates foreign key constraint', false, '23503'),
+    )
+
+    // Este dispositivo intenta marcar una dosis del medicamento borrado
+    const dosisHuerfana = demo.registrosDosis.find((r) => r.medicamentoId === medBorradoId)!
+    const localConHuerfana = reducer(demo, {
+      tipo: 'MARCAR_DOSIS',
+      id: dosisHuerfana.id,
+      estado: 'tomada',
+    })
+    rerender({ estado: localConHuerfana })
+
+    await waitFor(() => expect(cargarMock).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(result.current.estado).toBe('al-dia'))
+    const ultimoReemplazo = reemplazar.mock.calls.at(-1)?.[0] as EstadoPulso
+    expect(ultimoReemplazo.medicamentos.some((m) => m.id === medBorradoId)).toBe(false)
+    expect(ultimoReemplazo.registrosDosis.some((r) => r.medicamentoId === medBorradoId)).toBe(false)
+    expect(cargarConfirmado(UID)).toEqual(remotoSinMed)
+  })
 })

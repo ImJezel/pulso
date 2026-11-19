@@ -3,8 +3,9 @@
    por probar contra Supabase es que Postgres guarde lo que se le manda
    (tests/integracion/). */
 
-import { describe, expect, it } from 'vitest'
-import { aFilas, calcularCambios, desdeFilas, hayCambios, igual } from '../src/lib/remoto'
+import { describe, expect, it, vi } from 'vitest'
+import { aFilas, aplicarCambios, calcularCambios, desdeFilas, hayCambios, igual } from '../src/lib/remoto'
+import type { ClientePulso } from '../src/lib/remoto'
 import { generarDatosDemo } from '../src/lib/demo'
 import { reducer } from '../src/context/AppContext'
 import { ESTADO_INICIAL } from '../src/lib/storage'
@@ -134,5 +135,52 @@ describe('calcularCambios', () => {
     const c = calcularCambios(sin, demo)
     expect(c.mediciones.guardar.map((m) => m.id)).toEqual([id])
     expect(c.mediciones.borrar).toEqual([])
+  })
+
+  it('INC-05: las dosis pendientes auto-generadas se envían con ignoreDuplicates para no pisar tomas marcadas en otro dispositivo', async () => {
+    const upsertDosis = vi.fn().mockResolvedValue({ error: null, status: 201 })
+    const clienteMock = {
+      from: (tabla: string) => ({
+        upsert: tabla === 'registro_dosis' ? upsertDosis : vi.fn().mockResolvedValue({ error: null, status: 200 }),
+        delete: () => ({
+          eq: () => ({
+            in: vi.fn().mockResolvedValue({ error: null, status: 200 }),
+          }),
+        }),
+        insert: vi.fn().mockResolvedValue({ error: null, status: 201 }),
+      }),
+    } as unknown as ClientePulso
+
+    const pendienteAuto = {
+      id: `${demo.medicamentos[0].id}@2026-08-20T08:00:00`,
+      medicamentoId: demo.medicamentos[0].id,
+      fechaHoraProgramada: '2026-08-20T08:00:00',
+      estado: 'pendiente' as const,
+      registradoEn: null,
+    }
+    const tomadaExplicita = {
+      id: `${demo.medicamentos[0].id}@2026-08-20T20:00:00`,
+      medicamentoId: demo.medicamentos[0].id,
+      fechaHoraProgramada: '2026-08-20T20:00:00',
+      estado: 'tomada' as const,
+      registradoEn: '2026-08-20T20:05:00',
+    }
+
+    const nuevoEstado: EstadoPulso = {
+      ...demo,
+      registrosDosis: [...demo.registrosDosis, pendienteAuto, tomadaExplicita],
+    }
+
+    const cambios = calcularCambios(demo, nuevoEstado)
+    await aplicarCambios(clienteMock, UID, nuevoEstado, cambios)
+
+    expect(upsertDosis).toHaveBeenCalledTimes(2)
+    expect(upsertDosis.mock.calls[0][0]).toHaveLength(1)
+    expect(upsertDosis.mock.calls[0][0][0].id_registro).toBe(pendienteAuto.id)
+    expect(upsertDosis.mock.calls[0][1]).toEqual({ ignoreDuplicates: true })
+
+    expect(upsertDosis.mock.calls[1][0]).toHaveLength(1)
+    expect(upsertDosis.mock.calls[1][0][0].id_registro).toBe(tomadaExplicita.id)
+    expect(upsertDosis.mock.calls[1][1]).toBeUndefined()
   })
 })
