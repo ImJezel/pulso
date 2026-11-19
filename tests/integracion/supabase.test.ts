@@ -48,13 +48,16 @@ const ordenado = (e: EstadoPulso) => ({
 })
 
 describe.runIf(activo)('Supabase · base de datos real', () => {
-  const a = nuevoCliente()
-  const b = nuevoCliente()
-  const anonimo = nuevoCliente()
+  let a: ClientePulso
+  let b: ClientePulso
+  let anonimo: ClientePulso
   let idA = ''
   let idB = ''
 
   beforeAll(async () => {
+    a = nuevoCliente()
+    b = nuevoCliente()
+    anonimo = nuevoCliente()
     idA = await crearUsuarioDePrueba(a)
     idB = await crearUsuarioDePrueba(b)
   }, 30_000)
