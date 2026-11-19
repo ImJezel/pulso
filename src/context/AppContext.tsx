@@ -66,6 +66,7 @@ export type Accion =
   | { tipo: 'BORRAR_TODO' }
   | { tipo: 'REEMPLAZAR'; estado: EstadoPulso }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function reducer(estado: EstadoPulso, accion: Accion): EstadoPulso {
   switch (accion.tipo) {
     case 'GUARDAR_PERFIL':
@@ -208,7 +209,6 @@ export function AppProvider({
   )
   const [deshacer, setDeshacer] = useState<Deshacer | null>(null)
   const [anuncio, setAnuncio] = useState('')
-  const [errorAlmacenamiento, setErrorAlmacenamiento] = useState<string | null>(null)
   const temporizador = useRef<number | undefined>(undefined)
 
   /* Lo que llega del servidor reemplaza la copia local, y se completan las
@@ -220,13 +220,11 @@ export function AppProvider({
   const sync = useSincronizacion(usuarioId, estado, reemplazar)
 
   /* Persistir en cada cambio. Es un objeto pequeño; no hace falta debounce.
-     oxlint avisa aquí de "set-state-in-effect", y es el caso que el propio
-     aviso exceptúa: localStorage es un sistema externo y el error de escritura
-     solo se conoce después de intentarla. El aviso queda a la vista a
-     propósito, no silenciado. */
-  useEffect(() => {
+     El error de escritura en localStorage (por ejemplo, QuotaExceededError) se
+     calcula al guardar sin disparar un segundo render con setState en efecto. */
+  const errorAlmacenamiento = useMemo(() => {
     const r = guardar(estado, clave)
-    setErrorAlmacenamiento(r.ok ? null : r.motivo)
+    return r.ok ? null : r.motivo
   }, [estado, clave])
 
   /* Las preferencias se aplican al <html>: los tokens hacen el resto. */
@@ -307,6 +305,7 @@ export function usePulso(): ValorContexto {
   return c
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function limpiarAlmacenamiento(): void {
   borrarTodo()
 }

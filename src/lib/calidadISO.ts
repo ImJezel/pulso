@@ -2,8 +2,8 @@
    Pulso — Datos del cuestionario ISO/IEC 25010
    ----------------------------------------------------------------------------
    Los 40 ítems y sus puntuaciones viven aquí, en un solo sitio, para que la
-   página /calidad del prototipo y el documento docs/04-iso-25010.md digan
-   exactamente lo mismo. Si una puntuación cambia, cambia en los dos lados.
+   página /calidad del prototipo muestre la autoevaluación completa con sus
+   evidencias verificables en el repositorio.
 
    Las puntuaciones son la AUTOEVALUACIÓN TÉCNICA del equipo: cada una tiene
    detrás una evidencia verificable (un archivo, una prueba, una medición de

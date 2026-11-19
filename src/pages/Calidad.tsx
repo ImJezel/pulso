@@ -211,9 +211,8 @@ export default function Calidad() {
             resolvería la mitad del problema en unas pocas líneas.
           </p>
           <p className="border-t border-borde pt-3 text-[0.92rem] text-bruma-texto">
-            Esta pantalla muestra la autoevaluación técnica del equipo. El documento
-            docs/04-iso-25010.md contiene además la evaluación de los 5 participantes del test de
-            usabilidad sobre los ítems que un usuario sí puede juzgar, y el plan de mejora completo.
+            Esta pantalla muestra la autoevaluación técnica del equipo según el estándar ISO/IEC
+            25010:2011, con la evidencia verificable de cada ítem en el código del proyecto.
             {estado.datosDemo && ' Los datos que ves en el resto de la app son de demostración.'}
           </p>
         </Tarjeta>
