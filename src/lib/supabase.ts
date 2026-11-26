@@ -13,8 +13,13 @@ import type { Database } from '../types/supabase'
 const url = import.meta.env.VITE_SUPABASE_URL?.trim()
 const clavePublica = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
+/* Dos modos sin cuenta a propósito, aunque haya variables de entorno:
+   `--mode sincuenta` (npm run dev:local: demo sin internet y herramientas de
+   evidencia) y `--mode unico` (el archivo único que abre con doble clic). */
+const modoSinCuenta = import.meta.env.MODE === 'sincuenta' || import.meta.env.MODE === 'unico'
+
 export const supabase =
-  url && clavePublica
+  !modoSinCuenta && url && clavePublica
     ? createClient<Database>(url, clavePublica, {
         auth: {
           persistSession: true,

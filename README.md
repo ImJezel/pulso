@@ -99,7 +99,7 @@ npm run preview   # la sirve en http://localhost:4173
 
 ### Sin base de datos
 
-Si `.env.local` no existe o sus variables están vacías, Pulso funciona en **modo local**: sin cuentas y con los datos solo en el navegador, como el prototipo original. `npm run dev:local` fuerza ese modo aunque haya variables, y es el que usan las herramientas de evidencia (`recorrido`, `axe`, `capturas`).
+Si `.env.local` no existe o sus variables están vacías, Pulso funciona en **modo local**: sin cuentas y con los datos solo en el navegador, como el prototipo original. `npm run dev:local` (modo `sincuenta` de Vite) fuerza ese modo aunque haya variables, y es el que usan las herramientas de evidencia (`recorrido`, `axe`, `capturas`).
 
 ---
 
